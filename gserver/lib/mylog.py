@@ -1,0 +1,34 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# Email: chenwx716@163.com
+# DateTime: 2016-12-27 23:16:33
+__author__ = "chenwx"
+
+import os
+import logging
+
+
+class My_log(object):
+    """docstring for My_log
+    日志服务的基类
+    """
+
+    def __init__(self, log_file=None, level=logging.WARNING):
+        super(My_log, self).__init__()
+
+        self.logger = logging.getLogger()
+        if not self.logger.handlers:
+            log_dir = os.path.dirname(log_file)
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+
+            typea = self.logger.setLevel(level)
+            typea = logging.FileHandler(log_file)
+            formatter = logging.Formatter(
+                "[%(asctime)s]:%(filename)s:%(funcName)s:%(lineno)d :%(levelname)s: %(message)s"
+            )
+            typea.setFormatter(formatter)
+            self.logger.addHandler(typea)
+
+    def get_log(self):
+        return self.logger

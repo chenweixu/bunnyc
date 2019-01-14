@@ -1,0 +1,20 @@
+---
+bserver:
+  port:         8716
+  log:          log/bserver.log
+  pid:          log/bserver.pid
+  log_revel:    10
+
+redis:
+  host:         127.0.0.1
+  port:         26379
+  monitor_db:   5
+  queue:        0
+
+as_to_host:
+  host0105: 10.2.1.5
+  host0127: 127.0.0.1
+
+host_to_as:
+  10.2.1.5: host0105
+  127.0.0.1: host0127

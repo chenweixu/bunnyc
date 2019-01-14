@@ -1,0 +1,34 @@
+---
+mserver:
+  log:          log/mserver.log
+  pid:          log/mserver.pid
+  log_revel:    10
+
+bunnyc_mysql:
+  host:         127.0.0.1
+  port:         3306
+  dbname:       bunnyc
+  user:         bunnyc
+  passwd:       passw8rd
+
+redis:
+  host:         127.0.0.1
+  port:         26379
+  monitor_db:   5
+  queue:        0
+
+memcache_id:
+  mc0105: [10.2.1.5,21101]
+
+mcstrid:
+  10.2.1.5-21101: mc0105
+  mc0105: [10.2.1.5,21101]
+
+
+as_to_host:
+  host0105: 10.2.1.5
+  host0127: 127.0.0.1
+
+host_to_as:
+  10.2.1.5: host0105
+  127.0.0.1: host0127
