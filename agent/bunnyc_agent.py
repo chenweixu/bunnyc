@@ -16,7 +16,7 @@ import platform
 import json
 from signal import SIGTERM
 
-server_addr = ('10.27.10.181', 8716)
+server_addr = ('10.2.1.5', 8716)
 
 tcp_protocol = True  # True | False
 debug = False  # True | False
