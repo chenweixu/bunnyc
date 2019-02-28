@@ -18,8 +18,13 @@ from signal import SIGTERM
 
 server_addr = ('10.2.1.5', 8716)
 
-tcp_protocol = True  # True | False
-debug = False  # True | False
+tcp_protocol = False  # True | False
+debug = True  # True | False
+
+if platform.dist()[0] == 'fedora' and int(platform.dist()[1]) > 28:
+    ss_version = 'high'
+else:
+    ss_version = 'low'
 
 
 class Base_str_task(object):
@@ -140,49 +145,141 @@ class Network_linux_info(Base_str_task):
     def get_network_ss_status(self):
         # 通过 ss 命令采集 socket 的状态
         data = commands.getstatusoutput('/usr/sbin/ss -s')[1].split('\n')
-        new_data = {
-            'total': int(re.findall(r'\d+', data[0])[0]),
-            'kernel': int(re.findall(r'\d+', data[0])[1]),
-            'tcp': {
-                'tcp': int(re.findall(r'\d+', data[1])[0]),
-                'estab': int(re.findall(r'\d+', data[1])[1]),
-                'closed': int(re.findall(r'\d+', data[1])[2]),
-                'orphaned': int(re.findall(r'\d+', data[1])[3]),
-                'synrecv': int(re.findall(r'\d+', data[1])[4]),
-                'timewait1': int(re.findall(r'\d+', data[1])[5]),
-                'timewait2': int(re.findall(r'\d+', data[1])[6]),
-                'ports': int(re.findall(r'\d+', data[1])[7])
-            },
-            'ss_x': {
-                'total': int(re.findall(r'\d+', data[4])[0])
-            },
-            'RAW': {
-                'total': int(re.findall(r'\d+', data[5])[0]),
-                'ip': int(re.findall(r'\d+', data[5])[1]),
-                'ipv6': int(re.findall(r'\d+', data[5])[2])
-            },
-            'UDP': {
-                'total': int(re.findall(r'\d+', data[6])[0]),
-                'ip': int(re.findall(r'\d+', data[6])[1]),
-                'ipv6': int(re.findall(r'\d+', data[6])[2])
-            },
-            'TCP': {
-                'total': int(re.findall(r'\d+', data[7])[0]),
-                'ip': int(re.findall(r'\d+', data[7])[1]),
-                'ipv6': int(re.findall(r'\d+', data[7])[2])
-            },
-            'INET': {
-                'total': int(re.findall(r'\d+', data[8])[0]),
-                'ip': int(re.findall(r'\d+', data[8])[1]),
-                'ipv6': int(re.findall(r'\d+', data[8])[2])
-            },
-            'FRAG': {
-                'total': int(re.findall(r'\d+', data[9])[0]),
-                'ip': int(re.findall(r'\d+', data[9])[1]),
-                'ipv6': int(re.findall(r'\d+', data[9])[2])
+        if ss_version == 'low':
+            new_data = {
+                'total': int(re.findall(r'\d+', data[0])[0]),
+                'kernel': int(re.findall(r'\d+', data[0])[1]),
+                'tcp': {
+                    'tcp': int(re.findall(r'\d+', data[1])[0]),
+                    'estab': int(re.findall(r'\d+', data[1])[1]),
+                    'closed': int(re.findall(r'\d+', data[1])[2]),
+                    'orphaned': int(re.findall(r'\d+', data[1])[3]),
+                    'synrecv': int(re.findall(r'\d+', data[1])[4]),
+                    'timewait1': int(re.findall(r'\d+', data[1])[5]),
+                    'timewait2': int(re.findall(r'\d+', data[1])[6]),
+                    'ports': int(re.findall(r'\d+', data[1])[7])
+                },
+                'ss_x': {
+                    'total': int(re.findall(r'\d+', data[4])[0])
+                },
+                'RAW': {
+                    'total': int(re.findall(r'\d+', data[5])[0]),
+                    'ip': int(re.findall(r'\d+', data[5])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[5])[2])
+                },
+                'UDP': {
+                    'total': int(re.findall(r'\d+', data[6])[0]),
+                    'ip': int(re.findall(r'\d+', data[6])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[6])[2])
+                },
+                'TCP': {
+                    'total': int(re.findall(r'\d+', data[7])[0]),
+                    'ip': int(re.findall(r'\d+', data[7])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[7])[2])
+                },
+                'INET': {
+                    'total': int(re.findall(r'\d+', data[8])[0]),
+                    'ip': int(re.findall(r'\d+', data[8])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[8])[2])
+                },
+                'FRAG': {
+                    'total': int(re.findall(r'\d+', data[9])[0]),
+                    'ip': int(re.findall(r'\d+', data[9])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[9])[2])
+                }
             }
-        }
+        elif ss_version == 'high':
+            new_data = {
+                'total': int(re.findall(r'\d+', data[0])[0]),
+                'tcp': {
+                    'tcp': int(re.findall(r'\d+', data[1])[0]),
+                    'estab': int(re.findall(r'\d+', data[1])[1]),
+                    'closed': int(re.findall(r'\d+', data[1])[2]),
+                    'orphaned': int(re.findall(r'\d+', data[1])[3]),
+                    'timewait': int(re.findall(r'\d+', data[1])[4])
+                },
+                'RAW': {
+                    'total': int(re.findall(r'\d+', data[4])[0]),
+                    'ip': int(re.findall(r'\d+', data[4])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[4])[2])
+                },
+                'UDP': {
+                    'total': int(re.findall(r'\d+', data[5])[0]),
+                    'ip': int(re.findall(r'\d+', data[5])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[5])[2])
+                },
+                'TCP': {
+                    'total': int(re.findall(r'\d+', data[6])[0]),
+                    'ip': int(re.findall(r'\d+', data[6])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[6])[2])
+                },
+                'INET': {
+                    'total': int(re.findall(r'\d+', data[7])[0]),
+                    'ip': int(re.findall(r'\d+', data[7])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[7])[2])
+                },
+                'FRAG': {
+                    'total': int(re.findall(r'\d+', data[8])[0]),
+                    'ip': int(re.findall(r'\d+', data[8])[1]),
+                    'ipv6': int(re.findall(r'\d+', data[8])[2])
+                }
+            }
         return new_data
+
+
+def get_proc_tables():
+    proc_list = []
+    for i in os.listdir('/proc'):
+        if i.isdigit():
+            proc_list.append(i)
+
+    proc_data = []
+    for dirname in proc_list:
+        with open('/proc/{}/cmdline'.format(dirname), mode='rb') as fd:
+            content = fd.read().decode().split('\x00')
+            content[-1] = dirname
+            proc_data.append(content)
+    return proc_data
+
+
+def check_proc(name, agrs=None):
+    if not name:
+        return False
+
+    for i in get_proc_tables():
+        if name in i[0] and not agrs:
+            return True
+        elif name in i[0]:
+            for a in i[1:]:
+                if agrs in a:
+                    return True
+                else:
+                    continue
+    return False
+
+
+def get_monitor_proc_list():
+    proc_task = [
+        {
+            'proc_name': 'test_vim',
+            'proc_cmd': 'vim',
+            'proc_arg': ''
+        },
+        {
+            'proc_name': 'test_python',
+            'proc_cmd': 'python',
+            'proc_arg': 'test'
+        },
+    ]
+    return proc_task
+
+
+def check_proc_run(task_list):
+    data = []
+    for i in task_list:
+        status = check_proc(i.get('proc_cmd'), i.get('proc_arg'))
+        data.append([i.get('proc_name'), status])
+    return data
 
 
 def send_mess_udp(mess, addr):
@@ -237,7 +334,7 @@ def test_stdout_fun(data):
     f.close()
 
 
-def work_task(name):
+def work_task(name, task_env=None):
     system_info = Local_info()
     network_info = Network_linux_info()
 
@@ -266,16 +363,18 @@ def work_task(name):
             'disk_io': system_info.get_disk_io()
         }
 
-    # if name == 'proc':
-    #     body = {}
-    #     mess_code = 1005
+    if name == 'proc':
+        mess_code = 1005
+        body = {
+            'proc_check': check_proc_run(task_env)
+        }
 
     mess = {
         'type': 'linux',
         'mess_type': 563982389,
         'hostname': platform.node(),
         'system_release': platform.dist()[0],
-        'system_version': float(platform.dist()[1]),
+        'system_version': platform.dist()[1],
         'ctime': time.strftime('%Y-%m-%d %H:%M:%S'),
         'mess_code': mess_code,
         'body': body
@@ -293,6 +392,7 @@ def work_task(name):
 
 def run_task():
     second_30 = minute_1 = minute_5 = minute_10 = minute_30 = minute_60 = 0
+    monitor_list = get_monitor_proc_list()
     # 初始化时间计数
     while True:
         atime = int(time.time())
@@ -304,6 +404,7 @@ def run_task():
         if atime >= minute_1:
             # 每 1 分钟运行的任务
             minute_1 = atime + 60
+            work_task('proc', monitor_list)
             work_task('network')
 
         if atime >= minute_10:
@@ -379,6 +480,9 @@ if __name__ == '__main__':
     logfile = os.path.abspath(
         os.path.join(os.path.dirname(__file__), 'bunnyc_agent.log'))
     main()
+    # run_task()
     # work_task('cpu_ram')
     # work_task('network')
     # work_task('disk')
+    # monitor_list = get_monitor_proc_list()
+    # work_task('proc', monitor_list)
