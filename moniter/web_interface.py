@@ -46,7 +46,7 @@ def task_run(url_list):
     return Display
 
 def set_redis(value, mess_code):
-    redis_conf = conf_data.get("redis_conf")
+    redis_conf = conf_data.get("redis")
     redis_host = redis_conf.get("host")
     redis_port = redis_conf.get("port")
     redis_db = redis_conf.get("queue_db")

@@ -1,15 +1,16 @@
-# import json
+import json
 # from lib.conf import conf_data
 from lib.mylog import My_log
 # from lib.resolve_host_data import resolve_host_data
 from lib.resolve_host_data import Modify_data
 # from lib.modeify_data import modeify_web_service
+from lib.format_data import Format_data
 
-class Mserver_Modify(object):
-    """docstring for Mserver_Modify"""
+class Mserver_task(object):
+    """docstring for Mserver_task"""
 
     def __init__(self, data, wredis, mysql, redis_notice=None):
-        super(Mserver_Modify, self).__init__()
+        super(Mserver_task, self).__init__()
         self.data = data
         self.wredis = wredis
         self.mysql = mysql
@@ -23,8 +24,10 @@ class Mserver_Modify(object):
             self.work_log.debug('---------------------------------------')
             self.work_log.debug(str(data))
             self.work_log.debug('---------------------------------------')
-            self.work_log.debug('__write redis: ' + str(self.data.get('ip')))
-            self.wredis.wredis_monitor_data(data)
+            self.work_log.debug('__write redis: ' + str(data.get('ip')))
+            key = 'moniter:'+str(data.get('mess_code'))+':'+data.get('strid')
+
+            self.wredis.wredis_monitor_service(key, data)
             self.work_log.debug('__write redis success')
         except Exception as e:
             self.work_log.error('__write redis error')
@@ -48,30 +51,34 @@ class Mserver_Modify(object):
     def task_linux_host_data(self):
         # 先将原始的数据格式转换为规范的格式
         # 如果转换成功，则先插入 redis 再插入 mysql
+        info = Format_data()
         try:
-            ip = str(self.data.get('ip'))
-            self.work_log.debug('modify data linux host = ' + ip)
-            body = Modify_data()
-            new_data = body.modify_linux_data(self.data)
-            self.work_log.debug('modify data linux host = ' + ip +
-                                ' ------ success')
+            new_data = info.format_host_data(self.data)
+            self.work_log.debug('format host data success')
+            self.work_log.debug(str(self.data.get('ip')))
+            self.work_log.debug(str(self.data.get('mess_code')))
         except Exception as e:
-            self.work_log.error('modify data linux host error:' + ip)
+            self.work_log.error('format host data error')
             self.work_log.error(str(e))
+            self.work_log.error(str(self.data.get('ip')))
+            self.work_log.error(str(self.data.get('mess_code')))
+            self.work_log.error(str(self.data))
+            self.work_log.error('--------------------')
             new_data = False
 
         if new_data:
-            self.work_log.debug('task linux host new_data return success')
-            self.__wredis_monitor_data(new_data)
+            try:
+                self.__wredis_monitor_data(new_data)
+                self.work_log.debug('__wredis_monitor_data success')
+            except Exception as e:
+                self.work_log.error('__wredis_monitor_data error')
+                self.work_log.error(str(e))
 
             try:
-                self.work_log.debug('write linux data to mysql work start: ' +
-                                    ip)
-                self.work_log.debug(str(new_data))
                 self.__wmysql_data(new_data, iftype='host_linux')
                 self.work_log.debug('write linux data to mysql success')
             except Exception as e:
-                self.work_log.error('write mysql error ' + ip)
+                self.work_log.error('write mysql error')
                 self.work_log.error(str(e))
                 self.work_log.debug(str(new_data))
 
@@ -113,11 +120,14 @@ class Mserver_Modify(object):
         self.work_log.debug('task web_service run')
         new_data = self.modeify_web_service(self.data)
         for i in new_data:
-            self.work_log.debug(str(i))
+            # self.work_log.debug(str(i))
+            self.work_log.info(type(i[0]))
+            self.work_log.info(type(i[1]))
+            print(i[1])
             self.wredis.wredis_monitor_service(i[0], i[1])
 
     def start(self):
-        self.work_log.debug('Mserver_Modify Mserver_Modify class start')
+        self.work_log.debug('Mserver_task class start')
         try:
             data_type = self.data.get('type')
             if data_type == 'linux':

@@ -19,7 +19,7 @@ from signal import SIGTERM
 server_addr = ('10.2.1.5', 8716)
 
 tcp_protocol = False  # True | False
-debug = True  # True | False
+debug = False  # True | False
 
 if platform.dist()[0] == 'fedora' and int(platform.dist()[1]) > 28:
     ss_version = 'high'
@@ -342,12 +342,17 @@ def work_task(name, task_env=None):
         mess_code = 1001
         body = {
             'cpu': system_info.get_cpu_stat_data(),
-            'loadavg': system_info.get_loadavg(),
+            'loadavg': system_info.get_loadavg()
+        }
+
+    if name == 'meminfo':
+        mess_code = 1002
+        body = {
             'meminfo': system_info.get_meminfo()
         }
 
     if name == 'network':
-        mess_code = 1002
+        mess_code = 1003
         body = {
             'ss_status': network_info.get_network_ss_status(),
             'socket_status': network_info.get_socket_status(),
@@ -357,7 +362,7 @@ def work_task(name, task_env=None):
         }
 
     if name == 'disk':
-        mess_code = 1003
+        mess_code = 1004
         body = {
             'disk_size': system_info.get_disk_data(),
             'disk_io': system_info.get_disk_io()
@@ -398,7 +403,7 @@ def run_task():
         atime = int(time.time())
         if atime >= second_30:
             # 每30s运行的任务
-            second_30 = atime + 30
+            second_30 = atime + 20
             work_task('cpu_ram')
 
         if atime >= minute_1:
@@ -406,6 +411,10 @@ def run_task():
             minute_1 = atime + 60
             # work_task('proc', monitor_list)
             work_task('network')
+
+        if atime >= minute_5:
+            minute_5 = atime + 60
+            work_task('meminfo')
 
         if atime >= minute_10:
             # 每 10 分钟运行的任务

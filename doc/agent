@@ -4,3 +4,55 @@
 3. 添加进程监控
     启动时自 mgr 上拉取待监控的进程信息；
     如果拉取不到，则放弃进程监控任务
+
+#===================================================================
+
+mess = {
+    'type': 'linux',
+    'mess_type': 563982389,
+    'hostname': platform.node(),
+    'system_release': platform.dist()[0],
+    'system_version': platform.dist()[1],
+    'ctime': time.strftime('%Y-%m-%d %H:%M:%S'),
+    'mess_code': mess_code,
+    'body': body
+}
+
+# cpu
+mess_code = 1001
+body = {
+    'cpu': system_info.get_cpu_stat_data(),
+    'loadavg': system_info.get_loadavg()
+}
+
+
+# meminfo
+mess_code = 1002
+body = {
+    'meminfo': system_info.get_meminfo()
+}
+
+# network
+mess_code = 1003
+body = {
+    'ss_status': network_info.get_network_ss_status(),
+    'socket_status': network_info.get_socket_status(),
+    'tcp_link_status': network_info.get_tcp_link_status(),
+    'network_interface_info':
+    network_info.get_network_interface_info()
+}
+
+# disk
+mess_code = 1004
+body = {
+    'disk_size': system_info.get_disk_data(),
+    'disk_io': system_info.get_disk_io()
+}
+
+# proc
+mess_code = 1005
+body = {
+    'proc_check': check_proc_run(task_env)
+}
+
+#===================================================================

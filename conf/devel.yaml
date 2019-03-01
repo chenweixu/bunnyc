@@ -1,0 +1,92 @@
+---
+bserver:
+  port:         8716
+  log:          log/bserver.log
+  pid:          log/bserver.pid
+  log_revel:    10
+
+gserver:
+  log:          log/gserver.log
+  pid:          log/gserver.pid
+  log_revel:    10
+
+mserver:
+  log:          log/mserver.log
+  pid:          log/mserver.pid
+  log_revel:    10
+
+alarm:
+  log:          alarm.log
+  pid:          alarm.pid
+  log_revel:    10
+
+alarm:
+  log:          alarm.log
+  pid:          alarm.pid
+  log_revel:    10
+
+#===================================================================
+# DB
+
+bunnyc_mysql:
+  host:         127.0.0.1
+  port:         3306
+  dbname:       bunnyc
+  user:         bunnyc
+  passwd:       passw8rd
+
+redis:
+  host:         127.0.0.1
+  port:         26379
+  monitor_db:   5
+  queue:        0
+
+#===================================================================
+sms_conf:
+  api: http://127.0.0.1:9002/api/v1/sms/send
+  admin_phone: 15000000001
+
+#===================================================================
+
+as_to_host:
+  host0105: 10.2.1.5
+  host0127: 127.0.0.1
+
+host_to_as:
+  10.2.1.5: host0105
+  127.0.0.1: host0127
+
+memcache_id:
+  mc0105: [10.2.1.5,21101]
+
+mcstrid:
+  10.2.1.5-21101: mc0105
+#===================================================================
+
+web_service:
+  cd_50-17101: http://10.2.1.50:17101/Activate?wsdl
+  cd_50-17102: http://10.2.1.50:17102/Activate?wsdl
+  cd_50-17103: http://10.2.1.50:17103/Activate?wsdl
+  cd_50-17104: http://10.2.1.50:17104/Activate?wsdl
+  cd_50-17105: http://10.2.1.50:17105/Activate?wsdl
+  cd_50-17106: http://10.2.1.50:17106/Activate?wsdl
+  cd_51-17101: http://10.2.1.51:17101/Activate?wsdl
+  cd_51-17102: http://10.2.1.51:17102/Activate?wsdl
+  cd_51-17103: http://10.2.1.51:17103/Activate?wsdl
+  cd_51-17104: http://10.2.1.51:17104/Activate?wsdl
+  cd_51-17105: http://10.2.1.51:17105/Activate?wsdl
+  cd_51-17106: http://10.2.1.51:17106/Activate?wsdl
+  cd_52-17101: http://10.2.1.52:17101/Activate?wsdl
+  cd_52-17102: http://10.2.1.52:17102/Activate?wsdl
+  cd_52-17103: http://10.2.1.52:17103/Activate?wsdl
+  cd_52-17104: http://10.2.1.52:17104/Activate?wsdl
+  applog_122-17101: http://10.2.1.120:17101
+  applog_122-17102: http://10.2.1.120:17102
+  applog_122-17103: http://10.2.1.120:17103
+  applog_122-17104: http://10.2.1.120:17104
+  applog_123-17101: http://10.2.1.120:17101
+  applog_123-17102: http://10.2.1.120:17102
+  applog_123-17103: http://10.2.1.120:17103
+  applog_123-17104: http://10.2.1.120:17104
+
+

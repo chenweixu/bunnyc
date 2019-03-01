@@ -4,7 +4,6 @@ from lib.conf import conf_data
 
 host_to_as = conf_data('host_to_as')
 
-
 class resolve_host_data(object):
     """docstring for resolve_host_data
     主要是为了处理linux报文日志中的一些数据格式
@@ -106,30 +105,36 @@ class resolve_host_data(object):
 
     def get_disk_space_info(self):
         value = self.data.get('disk_size')
+        partition = []
         disk_info = {}
         for i in value:
-            disk_info[i[-1]] = {
+            partition_name = i[-1]
+            partition.append(partition_name)
+            disk_info[partition_name] = str({
                 'dev': i[0],
                 'sum': i[1],
                 'used': i[2],
                 'free': i[3],
                 'rate': int(i[4].rstrip('%')),
                 'name': i[5]
-            }
-        return disk_info
+            })
+        return partition, disk_info
 
     def get_iostatus(self):
         value = self.data.get('disk_io')
+        iodevice = []
         iostatus = {}
         for i in value:
-            iostatus[i[0]] = {
+            iodevice_name = i[0]
+            iodevice.append(iodevice_name)
+            iostatus[iodevice_name] = str({
                 'tps': float(i[1]),
                 'Blk_read': float(i[2]),
                 'Blk_wrtn': float(i[3]),
                 'Blk_read': int(i[4]),
                 'Blk_wrtn': int(i[5])
-            }
-        return iostatus
+            })
+        return iodevice, iostatus
 
     def get_socket_status(self):
         value = self.data.get('socket_status')
@@ -166,13 +171,12 @@ class resolve_host_data(object):
         return new_data
 
 
-class Modify_data(object):
-    """docstring for Modify_data"""
-
+class Format_data(object):
+    """docstring for Format_data"""
     def __init__(self):
-        super(Modify_data, self).__init__()
+        super(Format_data, self).__init__()
 
-    def modify_linux_data(self, data):
+    def format_host_data(self, data):
         # 将原始的数据格式转换为规范的格式
 
         body_txt = data.get('body')
@@ -180,104 +184,51 @@ class Modify_data(object):
         mess_code = data.get('mess_code')
 
         try:
-            if mess_code == 1001:
-                cpu_info = {
-                    'strid': host_to_as.get(data.get('ip')),
-                    'ctime': data.get('ctime'),
-                    'gtime': data.get('gtime'),
-                    'type': data.get('type'),
-                    'ip': data.get('ip'),
-                    'intip': int(ip_address(data.get('ip'))),
-                    'mess_code': mess_code,
-                    'cpu': resolve_data.get_cpu_run_data(),
-                    'loadavg': resolve_data.get_loadavg(),
-                }
+            mess = {
+                'strid': host_to_as.get(data.get('ip')),
+                'ctime': data.get('ctime'),
+                'gtime': data.get('gtime'),
+                'type': data.get('type'),
+                'ip': data.get('ip'),
+                'intip': int(ip_address(data.get('ip'))),
+                'mess_code': mess_code,
+            }
 
-                new_data = {
-                    'strid': host_to_as.get(data.get('ip')),
-                    'ctime': data.get('ctime'),
-                    'gtime': data.get('gtime'),
-                    'type': data.get('type'),
-                    'ip': data.get('ip'),
-                    'intip': int(ip_address(data.get('ip'))),
-                    'mess_code': mess_code,
-                    'cpu': resolve_data.get_cpu_run_data(),
-                    'loadavg': resolve_data.get_loadavg(),
-                    'mem_used_rate': resolve_data.get_mem_rate(),
-                    'swap_used_rate': resolve_data.get_swap_rate(),
-                    'meminfo': body_txt.get('meminfo')
-                }
-                return new_data
+            if mess_code == 1001:
+                mess.update(resolve_data.get_cpu_run_data())
+                mess.update(resolve_data.get_loadavg())
+                return mess
 
             elif mess_code == 1002:
-                mem_info = {
-                    'strid': host_to_as.get(data.get('ip')),
-                    'ctime': data.get('ctime'),
-                    'gtime': data.get('gtime'),
-                    'type': data.get('type'),
-                    'ip': data.get('ip'),
-                    'intip': int(ip_address(data.get('ip'))),
-                    'mess_code': mess_code,
-                    'mem_used_rate': resolve_data.get_mem_rate(),
-                    'swap_used_rate': resolve_data.get_swap_rate(),
-                    'meminfo': body_txt.get('meminfo')
-                }
+                mess.update(body_txt.get('meminfo'))
+                mess['mem_used_rate'] = resolve_data.get_mem_rate()
+                mess['swap_used_rate'] = resolve_data.get_swap_rate()
+                return mess
 
             elif mess_code == 1003:
-                new_data = {
-                    'strid': host_to_as.get(data.get('ip')),
-                    'ctime': data.get('ctime'),
-                    'gtime': data.get('gtime'),
-                    'type': data.get('type'),
-                    'ip': data.get('ip'),
-                    'intip': int(ip_address(data.get('ip'))),
-                    'mess_code': mess_code,
-                    'ss_status': body_txt.get('ss_status'),
-                    'socket_status': resolve_data.get_socket_status(),
-                    'tcp_link_status': body_txt.get('tcp_link_status'),
-                    'network_interface_info':
-                    resolve_data.get_netinterface_info()
-                }
-                return new_data
+                mess['ss_status'] = str(body_txt.get('ss_status'))
+                mess['socket_status'] = str(resolve_data.get_socket_status())
+                mess['tcp_link_status'] = str(body_txt.get('tcp_link_status'))
+                mess['network_interface_info'] = str(resolve_data.get_netinterface_info())
+                return mess
 
             elif mess_code == 1004:
-                new_data = {
-                    'strid': host_to_as.get(data.get('ip')),
-                    'ctime': data.get('ctime'),
-                    'gtime': data.get('gtime'),
-                    'type': data.get('type'),
-                    'ip': data.get('ip'),
-                    'intip': int(ip_address(data.get('ip'))),
-                    'mess_code': mess_code,
-                    'disk_size': resolve_data.get_disk_space_info(),
-                    'disk_io': resolve_data.get_iostatus()
-                }
-                return new_data
+                partition, disk_size = resolve_data.get_disk_space_info()
+                mess['partition'] = str(partition)
+                mess.update(disk_size)
 
+                iodevice, iostatus = resolve_data.get_iostatus()
+                mess['iodevice'] = str(iodevice)
+                mess.update(iostatus)
+                return mess
             else:
                 return False
 
         except Exception as e:
             raise
 
-            # new_data = {
-            #     'strid': host_to_as.get(data.get('ip')),
-            #     'ctime': data.get('ctime'),
-            #     'type': data.get('type'),
-            #     'ip': data.get('ip'),
-            #     'intip': int(ip_address(data.get('ip'))),
-            #     'cpu': info.get_cpu_run_data(),
-            #     'loadavg': info.get_loadavg(),
-            #     'mem_used_rate': info.get_mem_rate(),
-            #     'swap_used_rate': info.get_swap_rate(),
-            #     'meminfo': data.get('meminfo'),
-            #     'disk_size': info.get_disk_space_info(),
-            #     'disk_io': info.get_iostatus(),
-            #     'ss_status': data.get('ss_status'),
-            #     'socket_status': info.get_socket_status(),
-            #     'tcp_link_status': data.get('tcp_link_status'),
-            #     'network_interface_info': info.get_netinterface_info()
-            # }
-        #     return new_data
-        # except Exception as e:
-        #     raise e
+
+    # def format_host_data_mysql(self):
+    #     pass
+
+

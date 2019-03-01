@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # Email: chenwx716@163.com
 # DateTime: 2017-02-08 03:13:15
@@ -17,9 +16,8 @@ class my_redis(object):
         redis_host = redis_conf.get("host")
         redis_port = redis_conf.get("port")
         redis_db = redis_conf.get(dbname)
-        self.r = redis.StrictRedis(
-            host=redis_host, port=redis_port, db=redis_db, decode_responses=True
-        )
+        self.r = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)
+        # self.r = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db)
 
     def link_redis(self, dbname="queue"):
         try:
@@ -108,8 +106,11 @@ class monitor_data(my_redis):
             raise e
 
     def wredis_monitor_service(self, key, data, timeout=7200):
-        self.r.hmset(key, data)
-        self.r.expire(key, timeout)  # redis_db 中保留时间 2 小时
+        try:
+            self.r.hmset(key, data)
+            # self.r.expire(key, timeout)  # redis_db 中保留时间 2 小时
+        except Exception as e:
+            raise e
 
     def redkey(self, key):
         try:

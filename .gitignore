@@ -3,6 +3,7 @@
 *.log
 *.key
 conf.yaml
+produce.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

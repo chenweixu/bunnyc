@@ -32,7 +32,7 @@ vlaue:
 # memcached
 {
     type: mc,      // 类型
-    name: mc-63-21101,      // 名称
+    name: mc-5-21101,      // 名称
     addr: 10.2.1.5:21101      // 地址
     status: ok | error
     status_info:

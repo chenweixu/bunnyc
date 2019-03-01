@@ -63,37 +63,50 @@ class Bunnyc_mysql(object):
         mess_code = data.get('mess_code')
         if mess_code == 1001:
             try:
-                sql = "insert into run_host_log(\
+                sql = "insert into t_host_cpu(\
                     ctime,ip,cpu,cpu_user_rate,cpu_nice_rate,cpu_system_rate,cpu_idle_rate,cpu_iowait_rate,cpu_irq_rate,cpu_softirq_rate,\
-                    mem,swap,ld_1,ld_2,ld_3,proc_run,proc_sub) values (\
-                    '%s','%s','%f','%f','%f','%f','%f','%f','%f','%f','%d','%d','%f','%f','%f','%d','%d')"                                                                                                           % (\
+                    ld_1,ld_2,ld_3,proc_run,proc_sub) values (\
+                    '%s','%s','%f','%f','%f','%f','%f','%f','%f','%f','%f','%f','%f','%d','%d')"  % (\
                     data.get('ctime'),
                     data.get('ip'),
-                    data.get('cpu').get('cpu_rate'),
-                    data.get('cpu').get('cpu_user_rate'),
-                    data.get('cpu').get('cpu_nice_rate'),
-                    data.get('cpu').get('cpu_system_rate'),
-                    data.get('cpu').get('cpu_idle_rate'),
-                    data.get('cpu').get('cpu_iowait_rate'),
-                    data.get('cpu').get('cpu_irq_rate'),
-                    data.get('cpu').get('cpu_softirq_rate'),
-                    data.get('mem_used_rate'),
-                    data.get('swap_used_rate'),
-                    data.get('loadavg').get('ld_1'),
-                    data.get('loadavg').get('ld_5'),
-                    data.get('loadavg').get('ld_15'),
-                    data.get('loadavg').get('proc_run'),
-                    data.get('loadavg').get('proc_sum')
+                    data.get('cpu_rate'),
+                    data.get('cpu_user_rate'),
+                    data.get('cpu_nice_rate'),
+                    data.get('cpu_system_rate'),
+                    data.get('cpu_idle_rate'),
+                    data.get('cpu_iowait_rate'),
+                    data.get('cpu_irq_rate'),
+                    data.get('cpu_softirq_rate'),
+                    data.get('ld_1'),
+                    data.get('ld_5'),
+                    data.get('ld_15'),
+                    data.get('proc_run'),
+                    data.get('proc_sum')
                     )
             except Exception as e:
                 raise e
             try:
                 self.insert_sql(sql)
-                return 100
+            except Exception as e:
+                raise e
+
+        elif mess_code == 1002:
+            try:
+                sql = "insert into t_host_ram(ctime,ip,mem,swap) values ('%s','%s','%d','%d')"  % (\
+                    data.get('ctime'),
+                    data.get('ip'),
+                    data.get('mem_used_rate'),
+                    data.get('swap_used_rate')
+                    )
+            except Exception as e:
+                raise e
+            try:
+                self.insert_sql(sql)
             except Exception as e:
                 raise e
         else:
             return 200
+
 
     def insert_memcache_data(self, data):
         try:

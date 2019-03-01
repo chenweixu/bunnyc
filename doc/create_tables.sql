@@ -1,0 +1,57 @@
+CREATE TABLE `t_host_cpu` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `ctime` DATETIME NOT NULL,
+    `itime` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `ip` VARCHAR(20) NOT NULL DEFAULT 0,
+    `cpu` FLOAT(5,2) NOT NULL,
+    `cpu_user_rate` FLOAT(5,2) NOT NULL,
+    `cpu_nice_rate` FLOAT(5,2) NOT NULL,
+    `cpu_system_rate` FLOAT(5,2) NOT NULL,
+    `cpu_idle_rate` FLOAT(5,2) NOT NULL,
+    `cpu_iowait_rate` FLOAT(5,2) NOT NULL,
+    `cpu_irq_rate` FLOAT(5,2) NOT NULL,
+    `cpu_softirq_rate` FLOAT(5,2) NOT NULL,
+    `ld_1` FLOAT(5,2) NOT NULL,
+    `ld_2` FLOAT(5,2) NOT NULL,
+    `ld_3` FLOAT(5,2) NOT NULL,
+    `proc_run` SMALLINT(5) UNSIGNED NOT NULL,
+    `proc_sub` MEDIUMINT(8) UNSIGNED NOT NULL,
+    INDEX `IDX_HOST_CPU_CTIME` (`ctime`)
+)
+COLLATE='utf8_general_ci'
+ENGINE=InnoDB
+;
+
+CREATE TABLE `t_host_ram` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `ctime` DATETIME NOT NULL,
+    `itime` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `ip` VARCHAR(20) NOT NULL DEFAULT 0,
+    `mem` TINYINT(3) UNSIGNED NOT NULL DEFAULT 0,
+    `swap` TINYINT(3) UNSIGNED NOT NULL DEFAULT 0,
+    INDEX `IDX_HOST_RAM_CTIME` (`ctime`)
+)
+COLLATE='utf8_general_ci'
+ENGINE=InnoDB
+;
+
+
+CREATE TABLE t_memcached(
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `mcid` SMALLINT UNSIGNED NOT NULL,
+    `mcport` SMALLINT UNSIGNED NOT NULL,
+    `ctime` DATETIME NOT NULL,
+    `itime` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `ip` VARCHAR(20) NOT NULL DEFAULT 0,
+    `memsum` BIGINT UNSIGNED NOT NULL,
+    `memused` BIGINT UNSIGNED NOT NULL,
+    `cmd_get` BIGINT UNSIGNED NOT NULL,
+    `cmd_set` BIGINT UNSIGNED NOT NULL,
+    `get_hits` BIGINT UNSIGNED NOT NULL,
+    `curr_connections` SMALLINT UNSIGNED NOT NULL,
+    `total_connections` INT UNSIGNED NOT NULL,
+    INDEX `IDX_MEMCACHED_CTIME` (`ctime`)
+)
+COLLATE='utf8_general_ci'
+ENGINE=InnoDB
+;

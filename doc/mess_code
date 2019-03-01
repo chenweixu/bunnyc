@@ -1,0 +1,9 @@
+# linux agent
+1001        # cpu
+1002        # meminfo
+1003        # network
+1004        # disk
+1005        # proc
+
+# network
+2001        # web_service
