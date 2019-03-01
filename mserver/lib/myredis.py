@@ -107,6 +107,10 @@ class monitor_data(my_redis):
         except Exception as e:
             raise e
 
+    def wredis_monitor_service(self, key, data, timeout=7200):
+        self.r.hmset(key, data)
+        self.r.expire(key, timeout)  # redis_db 中保留时间 2 小时
+
     def redkey(self, key):
         try:
             return self.r.get(key)

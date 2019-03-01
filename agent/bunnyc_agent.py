@@ -404,7 +404,7 @@ def run_task():
         if atime >= minute_1:
             # 每 1 分钟运行的任务
             minute_1 = atime + 60
-            work_task('proc', monitor_list)
+            # work_task('proc', monitor_list)
             work_task('network')
 
         if atime >= minute_10:

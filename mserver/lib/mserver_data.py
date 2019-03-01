@@ -3,7 +3,7 @@
 from lib.mylog import My_log
 # from lib.resolve_host_data import resolve_host_data
 from lib.resolve_host_data import Modify_data
-
+# from lib.modeify_data import modeify_web_service
 
 class Mserver_Modify(object):
     """docstring for Mserver_Modify"""
@@ -81,6 +81,41 @@ class Mserver_Modify(object):
         self.__wredis_monitor_data(self.data)
         self.__wmysql_data(self.data, iftype='memcache')
 
+    def modeify_web_service(self, data):
+        info = data.get('body')
+        self.work_log.debug(str(info))
+        new_data = []
+        status_info = ""
+
+        for i in info:
+            status = i.get('status')
+            if status == 200:
+                status = 0
+                status_info = "ok"
+            elif status == 9:
+                status_info = "timeout"
+            else:
+                status_info = "error"
+
+            key = "moniter:web_service:" + i.get('name')
+            value = {
+                "type": "web_service",
+                "name": i.get('name'),
+                "url": i.get('url'),
+                "status": status,
+                "status_info": status_info,
+                "last_check_time": i.get('ctime')
+            }
+            new_data.append([key, value])
+        return new_data
+
+    def task_web_service(self):
+        self.work_log.debug('task web_service run')
+        new_data = self.modeify_web_service(self.data)
+        for i in new_data:
+            self.work_log.debug(str(i))
+            self.wredis.wredis_monitor_service(i[0], i[1])
+
     def start(self):
         self.work_log.debug('Mserver_Modify Mserver_Modify class start')
         try:
@@ -89,6 +124,8 @@ class Mserver_Modify(object):
                 self.task_linux_host_data()
             elif data_type == 'memcache':
                 self.task_memcache_data()
+            elif data_type == 'web_service':
+                self.task_web_service()
             else:
                 self.work_log.error('data_type unknown')
         except Exception as e:

@@ -9,11 +9,43 @@ key:
     moniter:<type>:<name>
 
 vlaue:
+# web_service
 {
     type: app_service,      // 类型
     name: test-27101,      // 名称
     addr: http://10.2.1.5:27101/service/xxx      // 地址
+    status: 0 / 1 / 2/ 9
+    status_info: ok | error | timeout
+    ctime:
+}
+
+# app_log_service
+{
+    type: app_log_service,      // 类型
+    name: test-27101,      // 名称
+    addr: http://10.2.1.5:27101/service/xxx      // 地址
     status: ok | error | timeout
     status_info:
-    last_check_time:
+    ctime:
+}
+
+# memcached
+{
+    type: mc,      // 类型
+    name: mc-63-21101,      // 名称
+    addr: 10.2.1.5:21101      // 地址
+    status: ok | error
+    status_info:
+    ctime:
+    link_num:
+}
+
+# proc
+{
+    type: proc,      // 类型
+    name: encrypt,      // 名称
+    addr: 10.2.1.5:2181      // 地址
+    status: ok | error
+    status_info:
+    ctime:
 }
