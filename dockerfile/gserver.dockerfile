@@ -2,21 +2,14 @@
 # Version: 0.01
 # gserver
 
-FROM python:3.7.0-alpine
+FROM chenwx716/python:3
 MAINTAINER chenwx "chenwx716@163.com"
 
-# set pip source
-RUN mkdir -p /root/.config/pip
-ADD pip.conf /root/.config/pip/pip.conf
-
-# set timezone
-COPY Shanghai /etc/localtime
-
 # install python pkg
-RUN pip install PyYAML && pip install redis && pip install python-memcached
+RUN pip3 install PyYAML && pip3 install redis && pip3 install pymemcache
 
 # add bserver
 ADD gserver /usr/local/gserver
 
 # CMD
-CMD /usr/local/bin/python /usr/local/gserver/run.py
+CMD python3 /usr/local/gserver/run.py

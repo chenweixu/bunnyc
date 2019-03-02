@@ -1,9 +1,5 @@
 import json
-# from lib.conf import conf_data
 from lib.mylog import My_log
-# from lib.resolve_host_data import resolve_host_data
-# from lib.resolve_host_data import Modify_data
-# from lib.modeify_data import modeify_web_service
 from lib.format_data import Format_data
 
 class Mserver_task(object):

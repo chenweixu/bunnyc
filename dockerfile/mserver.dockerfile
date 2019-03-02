@@ -2,18 +2,17 @@
 # Version: 0.01
 # mserver
 
-FROM python:3.7.0-alpine
+FROM chenwx716/python:3
 MAINTAINER chenwx "chenwx716@163.com"
 
-# set pip source
-RUN mkdir -p /root/.config/pip
-ADD pip.conf /root/.config/pip/pip.conf
+RUN apk add py3-cffi py3-cryptography
+# PyMySQL 在 alpine 平台上的依赖项
 
 # install python pkg
-RUN pip install PyYAML && pip install redis && pip install PyMySQL
+RUN pip3 install PyYAML && pip3 install redis && pip3 install PyMySQL
 
 # add mserver
 ADD mserver /usr/local/mserver
 
 # CMD
-CMD /usr/local/bin/python /usr/local/mserver/run.py
+CMD python3 /usr/local/mserver/run.py

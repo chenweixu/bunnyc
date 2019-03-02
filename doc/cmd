@@ -1,0 +1,6 @@
+docker stop alarm
+docker stop moniter
+docker stop gserver
+docker stop mserver
+docker stop bserver
+docker stop bmgr
