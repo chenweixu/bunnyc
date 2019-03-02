@@ -8,6 +8,7 @@ import requests
 import yaml
 import redis
 import time
+import json
 from pathlib import Path
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -26,7 +27,6 @@ def request_url(name, url):
         'name': name,
         'url': url,
         'status': code,
-        'ctime': time.strftime("%Y-%m-%d %H:%M:%S")
     }
     return mess
 
@@ -45,7 +45,7 @@ def task_run(url_list):
             Display.append(vle)
     return Display
 
-def set_redis(value, mess_code):
+def set_redis(key, value):
     redis_conf = conf_data.get("redis")
     redis_host = redis_conf.get("host")
     redis_port = redis_conf.get("port")
@@ -53,14 +53,45 @@ def set_redis(value, mess_code):
     r = redis.StrictRedis(
         host=redis_host, port=redis_port, db=redis_db, decode_responses=True
     )
-    key = 'queue:bunnyc'
-    data = {
-        'mess_code': mess_code,
-        'type': 'web_service',
-        'body': value
-    }
-    r.rpush(key, str(data))
+    r.rpush(key, value)
 
-web_service = conf_data.get("web_service")
-data = task_run(web_service)
-set_redis(data, 2001)
+
+def run_task():
+    web_service = conf_data.get("web_service")
+    data = task_run(web_service)
+
+    key = 'queue:bunnyc'
+    new_data = {
+        'mess_code': 2001,
+        'type': 'web_service',
+        'body': data,
+        'ctime': time.strftime("%Y-%m-%d %H:%M:%S")
+    }
+    set_redis(key, json.dumps(new_data))
+
+
+def main():
+    minute_1 = minute_5 = minute_10 = minute_30 = minute_60 = 0
+    # 每1/5/10/30分钟进行一次的查询
+    while 1:
+        atime = int(time.time())
+        if atime >= minute_1:
+            minute_1 = atime + 60
+            run_task()
+
+        if atime >= minute_5:
+            minute_5 = atime + 300
+
+        if atime >= minute_10:
+            minute_10 = atime + 600
+
+        if atime >= minute_30:
+            minute_30 = atime + 1800
+
+        if atime >= minute_60:
+            minute_60 = atime + 3600
+
+        time.sleep(2)
+
+if __name__ == '__main__':
+    main()

@@ -1,4 +1,5 @@
 import threading
+import json
 from lib.mylog import My_log
 from lib.mymemcached import my_memcached
 from lib.myredis import RedisQueue
@@ -26,7 +27,7 @@ class Get_memcache(threading.Thread):
                 mem_data = my_memcached(ip, port)
                 work_log.debug("get memcache data success: " + i)
                 data = mem_data.get_run_date(i)
-                r.put(data)
+                r.put(json.dumps(data))
                 work_log.debug("memcache data put redis queue: " + i)
             except Exception as e:
                 work_log.error("memcache data get error")

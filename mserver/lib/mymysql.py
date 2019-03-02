@@ -110,7 +110,7 @@ class Bunnyc_mysql(object):
 
     def insert_memcache_data(self, data):
         try:
-            sql = "insert run_memcached_log(\
+            sql = "insert t_memcached(\
                 ctime,ip,mcid,mcport,memsum,memused,cmd_get,cmd_set,get_hits,curr_connections,total_connections) values (\
                 '%s','%s','%d','%d','%d','%d','%d','%d','%d','%d','%d')" % (\
                 data.get('ctime'),

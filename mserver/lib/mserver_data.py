@@ -2,7 +2,7 @@ import json
 # from lib.conf import conf_data
 from lib.mylog import My_log
 # from lib.resolve_host_data import resolve_host_data
-from lib.resolve_host_data import Modify_data
+# from lib.resolve_host_data import Modify_data
 # from lib.modeify_data import modeify_web_service
 from lib.format_data import Format_data
 
@@ -83,10 +83,13 @@ class Mserver_task(object):
                 self.work_log.debug(str(new_data))
 
     def task_memcache_data(self):
-        # ip = self.data.get('ip')
-        self.work_log.debug('task memcache data return success')
-        self.__wredis_monitor_data(self.data)
-        self.__wmysql_data(self.data, iftype='memcache')
+        try:
+            self.__wredis_monitor_data(self.data)
+            self.__wmysql_data(self.data, iftype='memcache')
+            self.work_log.debug('memcached data to redis and mysql success')
+        except Exception as e:
+            self.work_log.error('memcached data to redis and mysql error')
+            self.work_log.error(str(e))
 
     def modeify_web_service(self, data):
         info = data.get('body')
@@ -104,27 +107,32 @@ class Mserver_task(object):
             else:
                 status_info = "error"
 
-            key = "moniter:web_service:" + i.get('name')
+            key = "moniter:"+ str(data.get("mess_code")) + ":" + i.get('name')
             value = {
-                "type": "web_service",
+                "type": data.get("type"),
                 "name": i.get('name'),
                 "url": i.get('url'),
                 "status": status,
                 "status_info": status_info,
-                "last_check_time": i.get('ctime')
+                "ctime": data.get("ctime")
             }
             new_data.append([key, value])
         return new_data
 
     def task_web_service(self):
         self.work_log.debug('task web_service run')
-        new_data = self.modeify_web_service(self.data)
-        for i in new_data:
-            # self.work_log.debug(str(i))
-            self.work_log.info(type(i[0]))
-            self.work_log.info(type(i[1]))
-            print(i[1])
-            self.wredis.wredis_monitor_service(i[0], i[1])
+        try:
+            new_data = self.modeify_web_service(self.data)
+        except Exception as e:
+            self.work_log.error('modeify web_service format error')
+            self.work_log.error(str(e))
+            new_data = False
+
+        if new_data:
+            for i in new_data:
+                self.work_log.info('key: '+ str(i[0]))
+                self.work_log.info('value: '+ str(i[1]))
+                self.wredis.wredis_monitor_service(i[0], i[1])
 
     def start(self):
         self.work_log.debug('Mserver_task class start')

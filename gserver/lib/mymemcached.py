@@ -18,21 +18,34 @@ class my_memcached(Memcached):
         self.port = port
 
     def get_run_date(self, strid):
-        mem_data = self.get_stats()
+        mem_data = self.stats()
+
+        cmd_get = mem_data.get('cmd_get'.encode())
+        get_hits = mem_data.get('get_hits'.encode())
+        memsum = mem_data.get('limit_maxbytes'.encode())
+        memused = mem_data.get('bytes'.encode())
+
+        if cmd_get > 0:
+            get_hits_rate = round(get_hits / cmd_get * 100, 2)
+        else:
+            get_hits_rate = 100
 
         run_data = {
+            'mess_code': 1101,
             'type': 'memcache',
             'strid': strid,
             'ip': self.ip,
             'intip': int(ip_address(self.ip)),
             'port': self.port,
-            'memsum': int(mem_data.get('limit_maxbytes')),
-            'memused': int(mem_data.get('bytes')),
-            'cmd_get': int(mem_data.get('cmd_get')),
-            'cmd_set': int(mem_data.get('cmd_set')),
-            'get_hits': int(mem_data.get('get_hits')),
-            'curr_connections': int(mem_data.get('curr_connections')),
-            'total_connections': int(mem_data.get('total_connections')),
+            'memsum': memsum,
+            'memused': memused,
+            'cmd_get': cmd_get,
+            'cmd_set': mem_data.get('cmd_set'.encode()),
+            'get_hits': get_hits,
+            'curr_connections': mem_data.get('curr_connections'.encode()),
+            'total_connections': mem_data.get('total_connections'.encode()),
+            'ram_used_rate': round(memused / memsum * 100, 2),
+            'get_hits_rate': get_hits_rate,
             'ctime': time.strftime('%Y-%m-%d %H:%M:%S')
         }
         return run_data

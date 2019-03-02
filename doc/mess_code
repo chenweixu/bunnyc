@@ -5,5 +5,8 @@
 1004        # disk
 1005        # proc
 
+# gserver
+1101        # memcached base data
+
 # network
 2001        # web_service

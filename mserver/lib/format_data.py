@@ -226,9 +226,3 @@ class Format_data(object):
 
         except Exception as e:
             raise
-
-
-    # def format_host_data_mysql(self):
-    #     pass
-
-
