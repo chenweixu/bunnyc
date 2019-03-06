@@ -1,21 +1,20 @@
 #!/bin/bash
 
-work_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+work_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"../ && pwd )"
 
 #===================================================================
 
-conf_file=$work_dir/devel.yaml
+conf_file=$work_dir/conf/devel.yaml
 
-cp $conf_file $work_dir/../alarm/conf.yaml
-cp $conf_file $work_dir/../bserver/conf.yaml
-cp $conf_file $work_dir/../gserver/conf.yaml
-cp $conf_file $work_dir/../mserver/conf.yaml
-cp $conf_file $work_dir/../moniter/conf.yaml
+cp $conf_file $work_dir/alarm/conf.yaml
+cp $conf_file $work_dir/bserver/conf.yaml
+cp $conf_file $work_dir/gserver/conf.yaml
+cp $conf_file $work_dir/mserver/conf.yaml
+cp $conf_file $work_dir/moniter/conf.yaml
 
-cd ..
 #===================================================================
 
-version=0.1
+version=0.2
 
 #------------------------------------------------
 echo "=========================================="

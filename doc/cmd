@@ -1,5 +1,9 @@
 
 docker build -t chenwx/alarm:0.1 -f dockerfile/alarm.dockerfile .
+docker build -t chenwx/moniter:0.1 -f dockerfile/moniter.dockerfile .
+docker build -t chenwx/bserver:0.1 -f dockerfile/bserver.dockerfile .
+docker build -t chenwx/gserver:0.1 -f dockerfile/gserver.dockerfile .
+docker build -t chenwx/mserver:0.1 -f dockerfile/mserver.dockerfile .
 
 
 docker run --name bserver -h bserver --net="host" -d chenwx/bserver:0.1
