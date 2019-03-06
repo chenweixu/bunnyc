@@ -1,0 +1,5 @@
+pymemcache==2.1.0
+PyYAML==5.1b3
+requests==2.21.0
+redis==3.2.0
+PyMySQL==0.9.3

@@ -1,0 +1,23 @@
+
+# 主机性能监控
+1. bunnyc_agent 采集数据 --> bserver --> redis(queue:bunnyc) --> mserver --> redis and mysql
+
+# 主动采集模块
+1. gserver --> redis(queue:bunnyc) --> mserver --> redis and mysql
+
+# moniter
+1. 每分钟扫描全量服务(后期调整为分别时间)
+2. 取得的数据存入 queue:bunnyc
+3. mserver 处理后存入 redis, 并且维护一个失败状态 fail list
+
+
+# mserver
+1. 取得 moniter 存入的数据
+2. 格式化后分别存入 redis, key: moniter:mess_code:strid
+
+
+# alarm
+1. 每30s 扫描 fail:mess_code 等失败列表
+2. 获取 moniter:mess_code:strid 的 status，组成待发送列表；
+3. 获取 alarm:mess_code:strid 是否存在，否则发送短信通知, 并且新增此 key(ttl:7200)
+3. 如果存在 alarm:mess_code:strid 则不发送短信

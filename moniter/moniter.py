@@ -13,7 +13,7 @@ from pathlib import Path
 from multiprocessing.dummy import Pool as ThreadPool
 
 conf_file = str(Path(__file__).resolve().parent / "conf.yaml")
-conf_data = yaml.load(open(conf_file, "r").read())
+conf_data = yaml.load(open(conf_file, "r").read(), Loader=yaml.FullLoader)
 
 def request_url(name, url):
     try:

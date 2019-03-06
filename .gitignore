@@ -4,6 +4,8 @@
 *.key
 conf.yaml
 produce.yaml
+test/
+produce/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -403,7 +403,7 @@ def run_task():
         atime = int(time.time())
         if atime >= second_30:
             # 每30s运行的任务
-            second_30 = atime + 20
+            second_30 = atime + 30
             work_task('cpu_ram')
 
         if atime >= minute_1:
@@ -413,7 +413,7 @@ def run_task():
             work_task('network')
 
         if atime >= minute_5:
-            minute_5 = atime + 60
+            minute_5 = atime + 300
             work_task('meminfo')
 
         if atime >= minute_10:

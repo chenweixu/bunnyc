@@ -127,36 +127,3 @@ class Bunnyc_mysql(object):
             self.insert_sql(sql)
         except Exception as e:
             raise e
-
-    def get_host_data(self):
-        today = time.strftime('%Y-%m-%d') + ' 02:00'
-        yesterday = (datetime.datetime.now() + datetime.timedelta(days=-1)
-                     ).strftime('%Y-%m-%d') + ' 08:00'
-        host_list = conf_data('day_host_list')
-        try:
-            sql = 'SELECT t.ip,MAX(cpu), ROUND(AVG(cpu),2),MAX(mem),MAX(swap) FROM run_host_log t WHERE t.ctime > \'' + yesterday + '\'  and t.ctime < \'' + today + '\' GROUP BY t.ip ORDER BY t.ip;'
-            host_info = self.get_fetchall(sql)
-            list_b = []
-            for i in host_list:
-                for b in host_info:
-                    if i == b[0]:
-                        list_b.append(b)
-            return list_b
-        except Exception as e:
-            raise e
-
-    def get_mc_max_connect(self):
-        today = time.strftime('%Y-%m-%d')
-        yesterday = (datetime.datetime.now() +
-                     datetime.timedelta(days=-1)).strftime('%Y-%m-%d')
-        try:
-            sql = 'SELECT mcid,MAX(curr_connections) FROM run_memcached_log WHERE ctime > \'' + yesterday + '\' AND ctime < \'' + today + '\' AND mcid NOT IN(4701,4702,4801,4802,5001,5002,5101,5102) AND mcid > \'4000\' GROUP BY mcid ORDER BY ip'
-
-            link_info = self.get_fetchall(sql)
-            link_sum = []
-            for i in link_info:
-                link_sum.append(i[1])
-        except Exception as e:
-            raise e
-
-        return link_sum

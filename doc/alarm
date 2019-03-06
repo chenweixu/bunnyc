@@ -1,0 +1,4 @@
+
+
+
+r.setex("name3", "value", 3)

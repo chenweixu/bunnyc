@@ -4,6 +4,10 @@
 version=0.1
 
 work_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+$work_dir/conf/devel.sh
+# $work_dir/conf/produce.sh
+
 #------------------------------------------------
 echo "=========================================="
 echo "del run log: $work_dir"
@@ -22,11 +26,8 @@ echo "=========================================="
 docker stop $container
 docker rm $container
 docker rmi chenwx/$container:$version
-rm $img_dir/chenwx_$container_$version.tar
 
 docker build -t chenwx/$container:$version -f dockerfile/$container.dockerfile .
-sleep 2
-docker save chenwx/$container:$version > $img_file
 
 #------------------------------------------------
 # gserver
@@ -41,11 +42,9 @@ echo "=========================================="
 docker stop $container
 docker rm $container
 docker rmi chenwx/$container:$version
-rm $img_dir/chenwx_$container_$version.tar
 
 docker build -t chenwx/$container:$version -f dockerfile/$container.dockerfile .
-sleep 2
-docker save chenwx/$container:$version > $img_file
+
 #------------------------------------------------
 # mserver
 container=mserver
@@ -59,11 +58,8 @@ echo "=========================================="
 docker stop $container
 docker rm $container
 docker rmi chenwx/$container:$version
-rm $img_dir/chenwx_$container_$version.tar
 
 docker build -t chenwx/$container:$version -f dockerfile/$container.dockerfile .
-sleep 2
-docker save chenwx/$container:$version > $img_file
 
 #------------------------------------------------
 # moniter
@@ -78,11 +74,8 @@ echo "=========================================="
 docker stop $container
 docker rm $container
 docker rmi chenwx/$container:$version
-rm $img_dir/chenwx_$container_$version.tar
 
 docker build -t chenwx/$container:$version -f dockerfile/$container.dockerfile .
-sleep 2
-docker save chenwx/$container:$version > $img_file
 
 #------------------------------------------------
 # alarm
@@ -97,15 +90,7 @@ echo "=========================================="
 docker stop $container
 docker rm $container
 docker rmi chenwx/$container:$version
-rm $img_dir/chenwx_$container_$version.tar
 
 docker build -t chenwx/$container:$version -f dockerfile/$container.dockerfile .
-sleep 2
-docker save chenwx/$container:$version > $img_file
-#===================================================================
 
-docker run --name bserver -h bserver --net="host" -d chenwx/bserver:$version
-docker run --name mserver -h mserver --net="host" -d chenwx/mserver:$version
-docker run --name gserver -h gserver --net="host" -d chenwx/gserver:$version
-docker run --name moniter -h moniter --net="host" -d chenwx/moniter:$version
-docker run --name alarm -h alarm --net="host" -d chenwx/alarm:$version
+#===================================================================

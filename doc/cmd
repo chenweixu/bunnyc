@@ -1,6 +1,17 @@
+
+docker build -t chenwx/alarm:0.1 -f dockerfile/alarm.dockerfile .
+
+
+docker run --name bserver -h bserver --net="host" -d chenwx/bserver:0.1
+docker run --name mserver -h mserver --net="host" -d chenwx/mserver:0.1
+docker run --name gserver -h gserver --net="host" -d chenwx/gserver:0.1
+docker run --name moniter -h moniter --net="host" -d chenwx/moniter:0.1
+docker run --name alarm -h alarm --net="host" -d chenwx/alarm:0.1
+
 docker stop alarm
 docker stop moniter
 docker stop gserver
 docker stop mserver
 docker stop bserver
 docker stop bmgr
+
