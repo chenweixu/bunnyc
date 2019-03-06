@@ -1,6 +1,7 @@
 #!/bin/bash
 
-work_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"../ && pwd )"
+work_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
+cd $work_dir
 
 #===================================================================
 

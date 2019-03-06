@@ -38,6 +38,7 @@ def mserver_work_task():
         sys.exit(1)
 
     fail_2001 = []
+    redis_sessice.delete('fail:2001')
 
     while 1:
         data = json.loads(redis_sessice.blpop("queue:bunnyc")[1])
