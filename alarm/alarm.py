@@ -16,7 +16,7 @@ from pathlib import Path
 
 conf_file = str(Path(__file__).resolve().parent / "conf.yaml")
 conf_data = yaml.load(open(conf_file, "r").read(), Loader=yaml.FullLoader)
-sms_api = conf_data.get("sms_conf").get("sms_api")
+sms_api = conf_data.get("sms_conf").get("api")
 alarm_conf = conf_data.get("alarm")
 
 
