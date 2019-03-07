@@ -23,6 +23,7 @@ create_container() {
     docker rmi chenwx/$container:$version
 
     docker build -t chenwx/$container:$version -f dockerfile/$container.dockerfile .
+    docker run --name $container -h $container --net="host" -d chenwx/$container:$version
 }
 
 container_name=$1
