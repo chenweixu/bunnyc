@@ -81,7 +81,7 @@ class MserverWebService(object):
             new_data.append([key, value])
         return new_data
 
-    def task_web_service(self, fail_list):
+    def task_web_service(self, fail_set):
         self.work_log.debug('task web_service run')
         try:
             new_data = self.modeify_web_service()
@@ -92,6 +92,7 @@ class MserverWebService(object):
 
         if new_data:
             for i in new_data:
+                self.work_log.debug('------------------------')
                 key = i[0]
                 value = i[1]
 
@@ -100,22 +101,24 @@ class MserverWebService(object):
                 service_name = value.get('name')
                 service_status = value.get('status')
 
-                if service_status == 0 and service_status not in fail_list:
+                self.work_log.debug(str(fail_set))
+                self.work_log.debug(service_name+' : '+str(service_status))
+
+                if service_status == 0 and service_name not in fail_set:
                     pass
 
-                elif service_status == 0 and service_status in fail_list:
-                    fail_list.remove(service_name)
+                elif service_status == 0 and service_name in fail_set:
+                    fail_set.remove(service_name)
                     self.wredis.srem('fail:2001', service_name)
-                    self.work_log.info('redis srem fail:2001:'+service_name)
+                    self.work_log.info('redis srem fail:2001 | '+key)
 
-                if service_status !=0 and service_status in fail_list:
-                    self.work_log.info('service_name: '+ service_name+' service_status: '+str(service_status))
-                    self.work_log.info(str(fail_list))
+                elif service_status !=0 and service_name in fail_set:
+                    pass
 
-                elif service_status !=0 and service_status not in fail_list:
-                    fail_list.append(service_name)
+                elif service_status !=0 and service_name not in fail_set:
+                    fail_set.add(service_name)
                     self.wredis.sadd('fail:2001', service_name)
-                    self.work_log.info('redis sadd fail:2001:'+service_name)
+                    self.work_log.info('redis sadd fail:2001 | '+key)
 
                 self.wredis.hmset(key, value)
                 self.wredis.expire(key, 7200)

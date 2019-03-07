@@ -53,6 +53,7 @@ def redis_link():
     r = redis.StrictRedis(host=host, port=port, decode_responses=True)
     return r
 
+
 def set_sms_mess(data):
     all_mess = []
     while len(data) > 0:
@@ -61,10 +62,10 @@ def set_sms_mess(data):
         all_mess.append("WebService检查故障: " + " ".join(mess))
     return all_mess
 
+
 def get_task_info(redis_sessice, task):
     data = []
     for i in task:
-        work_log.debug('task: '+str(i))
         moniter_key = 'moniter:2001:'+i
         alarm_key = 'alarm:2001:'+i
         alarm_value = redis_sessice.get(alarm_key)
@@ -76,23 +77,28 @@ def get_task_info(redis_sessice, task):
             work_log.debug(alarm_key+' set ex 7200')
         else:
             work_log.debug(alarm_key+ ' in redis, no add task')
-
     return data
+
 
 def send_sms_mess(data):
     mess = {"body": data, "phone": conf_data.get("sms_conf").get("admin_phone")}
     work_log.info("send sms mess:")
     work_log.info(str(mess))
-    # r = requests.get(sms_api, params=mess, timeout=5)
-    # code = r.status_code
-    # if code == 200:
-    #     work_log.info("send sms sesscue")
-    # r.close()
+    try:
+        r = requests.get(sms_api, params=mess, timeout=5)
+        code = r.status_code
+        if code == 200:
+            work_log.info("send sms sesscue")
+        r.close()
+    except Exception as e:
+        work_log.error('request sms api error')
+        work_log.error(str(e))
 
 
 def run_web_service_task():
     r = redis_link()
     task = r.smembers('fail:2001')
+    work_log.debug('--------------------')
     work_log.info('get fail:2001: '+str(task))
     if not task:
         work_log.info("check web_service all success")
@@ -119,7 +125,6 @@ def main():
             minute_10 = atime + 600
 
         time.sleep(2)
-
 
 if __name__ == "__main__":
     work_dir = Path(__file__).resolve().parent

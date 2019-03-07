@@ -68,29 +68,31 @@ mcstrid:
 #===================================================================
 
 web_service:
+  local_9000: http://10.2.1.5:9000
   cd_50-17101: http://10.2.1.50:17101/Activate?wsdl
   cd_50-17102: http://10.2.1.50:17102/Activate?wsdl
-  cd_50-17103: http://10.2.1.50:17103/Activate?wsdl
-  cd_50-17104: http://10.2.1.50:17104/Activate?wsdl
-  cd_50-17105: http://10.2.1.50:17105/Activate?wsdl
-  cd_50-17106: http://10.2.1.50:17106/Activate?wsdl
-  cd_51-17101: http://10.2.1.51:17101/Activate?wsdl
-  cd_51-17102: http://10.2.1.51:17102/Activate?wsdl
-  cd_51-17103: http://10.2.1.51:17103/Activate?wsdl
-  cd_51-17104: http://10.2.1.51:17104/Activate?wsdl
-  cd_51-17105: http://10.2.1.51:17105/Activate?wsdl
-  cd_51-17106: http://10.2.1.51:17106/Activate?wsdl
-  cd_52-17101: http://10.2.1.52:17101/Activate?wsdl
-  cd_52-17102: http://10.2.1.52:17102/Activate?wsdl
-  cd_52-17103: http://10.2.1.52:17103/Activate?wsdl
-  cd_52-17104: http://10.2.1.52:17104/Activate?wsdl
-  applog_122-17101: http://10.2.1.120:17101
-  applog_122-17102: http://10.2.1.120:17102
-  applog_122-17103: http://10.2.1.120:17103
-  applog_122-17104: http://10.2.1.120:17104
-  applog_123-17101: http://10.2.1.120:17101
-  applog_123-17102: http://10.2.1.120:17102
-  applog_123-17103: http://10.2.1.120:17103
-  applog_123-17104: http://10.2.1.120:17104
+  # cd_50-17103: http://10.2.1.50:17103/Activate?wsdl
+  # cd_50-17104: http://10.2.1.50:17104/Activate?wsdl
+  # cd_50-17105: http://10.2.1.50:17105/Activate?wsdl
+  # cd_50-17106: http://10.2.1.50:17106/Activate?wsdl
+  # cd_51-17101: http://10.2.1.51:17101/Activate?wsdl
+  # cd_51-17102: http://10.2.1.51:17102/Activate?wsdl
+  # cd_51-17103: http://10.2.1.51:17103/Activate?wsdl
+  # cd_51-17104: http://10.2.1.51:17104/Activate?wsdl
+  # cd_51-17105: http://10.2.1.51:17105/Activate?wsdl
+  # cd_51-17106: http://10.2.1.51:17106/Activate?wsdl
+  # cd_52-17101: http://10.2.1.52:17101/Activate?wsdl
+  # cd_52-17102: http://10.2.1.52:17102/Activate?wsdl
+  # cd_52-17103: http://10.2.1.52:17103/Activate?wsdl
+  # cd_52-17104: http://10.2.1.52:17104/Activate?wsdl
+  # applog_122-17101: http://10.2.1.120:17101
+  # applog_122-17102: http://10.2.1.120:17102
+  # applog_122-17103: http://10.2.1.120:17103
+  # applog_122-17104: http://10.2.1.120:17104
+  # applog_123-17101: http://10.2.1.120:17101
+  # applog_123-17102: http://10.2.1.120:17102
+  # applog_123-17103: http://10.2.1.120:17103
+  # applog_123-17104: http://10.2.1.120:17104
+
 
 

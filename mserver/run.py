@@ -37,7 +37,7 @@ def mserver_work_task():
         work_log.error(str(e))
         sys.exit(1)
 
-    fail_2001 = []
+    fail_2001 = set()
     redis_sessice.delete('fail:2001')
 
     while 1:
@@ -53,7 +53,7 @@ def mserver_work_task():
 
             elif data_type == 'web_service':
                 next_task = MserverWebService(data, redis_sessice)
-                next_task.task_web_service(fail_list=fail_2001)
+                next_task.task_web_service(fail_set=fail_2001)
 
             elif data_type == 'memcache':
                 next_task = MserverMemcached(data, redis_sessice, work_mysql)
