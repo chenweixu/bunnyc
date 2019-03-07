@@ -57,8 +57,8 @@ def redis_link():
 def set_sms_mess(data):
     all_mess = []
     while len(data) > 0:
-        mess = data[0:10]
-        del data[0:10]
+        mess = data[0:20]
+        del data[0:20]
         all_mess.append("WebService检查故障: " + " ".join(mess))
     return all_mess
 

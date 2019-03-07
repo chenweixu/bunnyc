@@ -18,6 +18,7 @@ create_container() {
     echo "build: $container"
     echo "=========================================="
     cp $conf_file $work_dir/$container/conf.yaml
+    echo "stop container: $container"
     docker stop $container
     docker rm $container
     docker rmi chenwx/$container:$version
