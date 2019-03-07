@@ -15,13 +15,20 @@ from multiprocessing.dummy import Pool as ThreadPool
 conf_file = str(Path(__file__).resolve().parent / "conf.yaml")
 conf_data = yaml.load(open(conf_file, "r").read(), Loader=yaml.FullLoader)
 
-def request_url(name, url):
+def get_url(url):
     try:
-        r = requests.get(url, timeout=3)
+        r = requests.get(url, timeout=2)
         code = r.status_code
         r.close()
+        return code
     except Exception as e:
-        code = 9
+        return 9
+
+def request_url(name, url):
+    code = get_url(url)
+    if code == 9:
+        time.sleep(2)
+        code = get_url(url)
 
     mess = {
         'name': name,
