@@ -110,6 +110,7 @@ class MserverWebService(object):
                 elif service_status == 0 and service_name in fail_set:
                     fail_set.remove(service_name)
                     self.wredis.srem('fail:2001', service_name)
+                    self.wredis.sadd('restore:2001', service_name)
                     self.work_log.info('redis srem fail:2001 | '+key)
 
                 elif service_status !=0 and service_name in fail_set:

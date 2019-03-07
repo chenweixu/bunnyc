@@ -4,7 +4,10 @@
 # DateTime: 2019-02-28 12:59:26
 __author__ = "chenwx"
 
+import telnetlib
 import requests
+import logging
+import os
 import yaml
 import redis
 import time
@@ -14,43 +17,141 @@ from multiprocessing.dummy import Pool as ThreadPool
 
 conf_file = str(Path(__file__).resolve().parent / "conf.yaml")
 conf_data = yaml.load(open(conf_file, "r").read(), Loader=yaml.FullLoader)
+app_conf = conf_data.get("monitor")
 
-def get_url(url):
-    try:
-        r = requests.get(url, timeout=2)
-        code = r.status_code
-        r.close()
-        return code
-    except Exception as e:
-        return 9
+class My_log(object):
+    """docstring for My_log
+    日志服务的基类
+    """
 
-def request_url(name, url):
-    code = get_url(url)
-    if code == 9:
-        time.sleep(2)
-        code = get_url(url)
+    def __init__(self, log_file=None, level=logging.WARNING):
+        super(My_log, self).__init__()
 
-    mess = {
-        'name': name,
-        'url': url,
-        'status': code,
-    }
-    return mess
+        self.logger = logging.getLogger()
+        if not self.logger.handlers:
+            log_dir = os.path.dirname(log_file)
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
 
-def task_run(url_list):
-    pool = ThreadPool(50)
-    result = []
-    for name, url in url_list.items():
-        result.append(pool.apply_async(request_url, (name, url)))
-    pool.close()
-    pool.join()
+            typea = self.logger.setLevel(level)
+            typea = logging.FileHandler(log_file)
+            formatter = logging.Formatter(
+                "[%(asctime)s]:%(filename)s:%(funcName)s:%(lineno)d :%(levelname)s: %(message)s"
+            )
+            typea.setFormatter(formatter)
+            self.logger.addHandler(typea)
 
-    Display = []
-    for res in result:
-        vle = res.get()
-        if vle != 0:
-            Display.append(vle)
-    return Display
+    def get_log(self):
+        return self.logger
+
+class check_web_service(object):
+    """docstring for check_web_service"""
+    def __init__(self):
+        super(check_web_service, self).__init__()
+
+    def get_url(self, url):
+        try:
+            r = requests.get(url, timeout=2)
+            code = r.status_code
+            r.close()
+            return code
+        except Exception as e:
+            return 9
+
+    def request_url(self, name, url):
+        code = self.get_url(url)
+        if code == 9:
+            time.sleep(2)
+            code = self.get_url(url)
+            work_log.error('check url timeoute, status: 9 '+str(url))
+
+        mess = {
+            'name': name,
+            'url': url,
+            'status': code,
+        }
+        return mess
+
+    def task_run(self, url_list):
+        pool = ThreadPool(50)
+        result = []
+        for name, url in url_list.items():
+            result.append(pool.apply_async(self.request_url, (name, url)))
+        pool.close()
+        pool.join()
+
+        Display = []
+        for res in result:
+            vle = res.get()
+            if vle != 0:
+                Display.append(vle)
+        return Display
+
+    def run_web_service_task(self):
+        web_service = conf_data.get("web_service")
+        data = task_run(web_service)
+
+        key = 'queue:bunnyc'
+        new_data = {
+            'mess_code': 2001,
+            'type': 'web_service',
+            'body': data,
+            'ctime': time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        set_redis(key, json.dumps(new_data))
+
+
+class check_network_tcp(object):
+    """docstring for check_network_tcp"""
+    def __init__(self):
+        super(check_network_tcp, self).__init__()
+
+    def port_check(self, ip_port):
+        ip = ip_port.split(':')[0]
+        port = ip_port.split(':')[1]
+        try:
+            tn = telnetlib.Telnet(ip, port=port, timeout=3)
+            # 检查正常
+            work_log.debug("tcp check success, desc_host: %s ,port: %s" % (ip, str(port)))
+            return [ip_port, 0]
+        except ConnectionRefusedError:
+            # 主机通，端口不通
+            work_log.error("port_check error desc_host: %s ,port: %s: return status 1, ConnectionRefusedError" % (ip, str(port)))
+            return [ip_port, 1]
+        except Exception as e:
+            # 其它原因，更多是对端主机和端口都不通
+            work_log.error("port_check error desc_host: %s ,port: %s: return status 9, other error" % (ip, str(port)))
+            work_log.error(str(e))
+            return [ip_port, 9]
+
+    def run_network_tcp_port_task(self):
+        tcp_service = conf_data.get("network_tcp")
+        mess = {}
+        for service_name in tcp_service:
+
+            pool = ThreadPool(10)
+            result = []
+            for addr in tcp_service.get(service_name):
+                result.append(pool.apply_async(self.port_check, (addr,)))
+            pool.close()
+            pool.join()
+
+            Display = []
+            for res in result:
+                vle = res.get()
+                if vle != 0:
+                    Display.append(vle)
+            mess[service_name] = Display
+
+        key = 'queue:bunnyc'
+        new_data = {
+            'mess_code': 2010,
+            'type': 'tcp_service',
+            'body': mess,
+            'ctime': time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        set_redis(key, json.dumps(new_data))
+
 
 def set_redis(key, value):
     redis_conf = conf_data.get("redis")
@@ -61,30 +162,24 @@ def set_redis(key, value):
         host=redis_host, port=redis_port, db=redis_db, decode_responses=True
     )
     r.rpush(key, value)
-
-
-def run_task():
-    web_service = conf_data.get("web_service")
-    data = task_run(web_service)
-
-    key = 'queue:bunnyc'
-    new_data = {
-        'mess_code': 2001,
-        'type': 'web_service',
-        'body': data,
-        'ctime': time.strftime("%Y-%m-%d %H:%M:%S")
-    }
-    set_redis(key, json.dumps(new_data))
+    r.close()
 
 
 def main():
-    minute_1 = minute_5 = minute_10 = minute_30 = minute_60 = 0
+    second_20 = minute_1 = minute_5 = minute_10 = minute_30 = 0
     # 每1/5/10/30分钟进行一次的查询
     while 1:
         atime = int(time.time())
+
+        if atime >= second_20:
+            second_20 = atime + 20
+            tcp_service = check_network_tcp()
+            tcp_service.run_network_tcp_port_task()
+
         if atime >= minute_1:
             minute_1 = atime + 60
-            run_task()
+            web = check_web_service()
+            web.run_web_service_task()
 
         if atime >= minute_5:
             minute_5 = atime + 300
@@ -95,10 +190,14 @@ def main():
         if atime >= minute_30:
             minute_30 = atime + 1800
 
-        if atime >= minute_60:
-            minute_60 = atime + 3600
-
         time.sleep(2)
 
 if __name__ == '__main__':
-    main()
+    work_dir = Path(__file__).resolve().parent
+    logfile = work_dir / app_conf.get("log")
+    work_log = My_log(logfile, app_conf.get("log_revel")).get_log()
+
+    # main()
+
+    tcp_service = check_network_tcp()
+    tcp_service.run_network_tcp_port_task()

@@ -17,7 +17,7 @@ from pathlib import Path
 conf_file = str(Path(__file__).resolve().parent / "conf.yaml")
 conf_data = yaml.load(open(conf_file, "r").read(), Loader=yaml.FullLoader)
 sms_api = conf_data.get("sms_conf").get("api")
-alarm_conf = conf_data.get("alarm")
+app_conf = conf_data.get("alarm")
 
 
 class My_log(object):
@@ -46,6 +46,63 @@ class My_log(object):
         return self.logger
 
 
+class check_web_service(object):
+    """docstring for check_web_service"""
+
+    def __init__(self):
+        super(check_web_service, self).__init__()
+
+    def get_task_info(self, redis_sessice, task):
+        data = []
+        for i in task:
+            moniter_key = "moniter:2001:" + i
+            alarm_key = "alarm:2001:" + i
+            alarm_value = redis_sessice.get(alarm_key)
+            if not alarm_value:
+                work_log.debug(alarm_key + " not in redis")
+                value = redis_sessice.hget(moniter_key, "status")
+                data.append(i + ":" + str(value))
+                redis_sessice.set(alarm_key, 0, ex=7200)
+                work_log.debug(alarm_key + " set ex 7200")
+            else:
+                work_log.debug(alarm_key + " in redis, no add task")
+        return data
+
+    def start(self):
+        r = redis_link()
+        task = r.smembers("fail:2001")
+        restore = r.smembers("restore:2001")
+        work_log.debug("--------------------")
+        work_log.info("get fail:2001: " + str(task))
+        if not task and not restore:
+            # 没有故障信息和恢复信息
+            work_log.info("check web_service all success")
+            return True
+
+        if task:
+            try:
+                data = self.get_task_info(r, task)
+                mess = set_sms_mess("WebService检查故障: ", data)
+                for i in mess:
+                    send_sms_mess(i)
+            except Exception as e:
+                work_log.error('operating fail task error')
+                work_log.error(str(e))
+
+        if restore:
+            try:
+                mess = set_sms_mess("WebService检查恢复: ", restore)
+                for i in mess:
+                    send_sms_mess(i)
+                r.delete("restore:2001")        # 删除恢复任务队列集合
+                for i in restore:
+                    alarm_key = "alarm:2001:" + i
+                    r.delete(alarm_key)         # 删除已告警状态
+            except Exception as e:
+                work_log.error('operating restore task error')
+                work_log.error(str(e))
+
+
 def redis_link():
     redis_conf = conf_data.get("redis")
     host = redis_conf.get("host")
@@ -54,30 +111,14 @@ def redis_link():
     return r
 
 
-def set_sms_mess(data):
+def set_sms_mess(head_mess, data):
     all_mess = []
     while len(data) > 0:
         mess = data[0:20]
         del data[0:20]
-        all_mess.append("WebService检查故障: " + " ".join(mess))
+        all_mess.append(head_mess + " ".join(mess))
+        all_mess.append("" + " ".join(mess))
     return all_mess
-
-
-def get_task_info(redis_sessice, task):
-    data = []
-    for i in task:
-        moniter_key = 'moniter:2001:'+i
-        alarm_key = 'alarm:2001:'+i
-        alarm_value = redis_sessice.get(alarm_key)
-        if not alarm_value:
-            work_log.debug(alarm_key+' not in redis')
-            value = redis_sessice.hget(moniter_key, 'status')
-            data.append(i+':'+str(value))
-            redis_sessice.set(alarm_key, 0, ex=7200)
-            work_log.debug(alarm_key+' set ex 7200')
-        else:
-            work_log.debug(alarm_key+ ' in redis, no add task')
-    return data
 
 
 def send_sms_mess(data):
@@ -91,32 +132,23 @@ def send_sms_mess(data):
             work_log.info("send sms sesscue")
         r.close()
     except Exception as e:
-        work_log.error('request sms api error')
+        work_log.error("request sms api error")
         work_log.error(str(e))
 
 
-def run_web_service_task():
-    r = redis_link()
-    task = r.smembers('fail:2001')
-    work_log.debug('--------------------')
-    work_log.info('get fail:2001: '+str(task))
-    if not task:
-        work_log.info("check web_service all success")
-        return True
-    data = get_task_info(r, task)
-    mess = set_sms_mess(data)
-    for i in mess:
-        send_sms_mess(i)
-
-
 def main():
-    minute_1 = minute_5 = minute_10 = 0
+    second_20 = minute_1 = minute_5 = minute_10 = 0
     # 每1/5/10/30分钟进行一次的查询
     while 1:
         atime = int(time.time())
+
+        if atime >= second_20:
+            second_20 = atime + 20
+            web_service = check_web_service()
+            web_service.start()
+
         if atime >= minute_1:
             minute_1 = atime + 60
-            run_web_service_task()
 
         if atime >= minute_5:
             minute_5 = atime + 300
@@ -126,8 +158,9 @@ def main():
 
         time.sleep(2)
 
+
 if __name__ == "__main__":
     work_dir = Path(__file__).resolve().parent
-    logfile = work_dir / alarm_conf.get("log")
-    work_log = My_log(logfile, alarm_conf.get("log_revel")).get_log()
+    logfile = work_dir / app_conf.get("log")
+    work_log = My_log(logfile, app_conf.get("log_revel")).get_log()
     main()

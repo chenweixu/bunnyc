@@ -37,7 +37,7 @@ def mserver_work_task():
         work_log.error(str(e))
         sys.exit(1)
 
-    fail_2001 = set()
+    fail_2001 = set()       # web service 失败集合
     redis_sessice.delete('fail:2001')
 
     while 1:

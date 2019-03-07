@@ -20,9 +20,9 @@ alarm:
   pid:          alarm.pid
   log_revel:    10
 
-alarm:
-  log:          alarm.log
-  pid:          alarm.pid
+monitor:
+  log:          monitor.log
+  pid:          monitor.pid
   log_revel:    10
 
 #===================================================================
@@ -95,4 +95,8 @@ web_service:
   # applog_123-17104: http://10.2.1.120:17104
 
 
-
+network_tcp:
+  ssh:
+    - 10.2.1.5:22
+    - 10.2.1.5:9001
+    - 10.26.2.67:22
