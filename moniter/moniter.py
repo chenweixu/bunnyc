@@ -17,7 +17,7 @@ conf_data = yaml.load(open(conf_file, "r").read(), Loader=yaml.FullLoader)
 
 def request_url(name, url):
     try:
-        r = requests.get(url, timeout=1)
+        r = requests.get(url, timeout=2)
         code = r.status_code
         r.close()
     except Exception as e:

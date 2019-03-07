@@ -21,3 +21,7 @@ docker stop bmgr
 
 
 smembers fail:2001
+
+hgetall "moniter:2001:cd_69-17102"
+
+get "alarm:2001:dmz_41-17105"

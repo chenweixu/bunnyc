@@ -106,13 +106,16 @@ class MserverWebService(object):
                 elif service_status == 0 and service_status in fail_list:
                     fail_list.remove(service_name)
                     self.wredis.srem('fail:2001', service_name)
+                    self.work_log.info('redis srem fail:2001:'+service_name)
 
                 if service_status !=0 and service_status in fail_list:
-                    pass
+                    self.work_log.info('service_name: '+ service_name+' service_status: '+str(service_status))
+                    self.work_log.info(str(fail_list))
 
                 elif service_status !=0 and service_status not in fail_list:
                     fail_list.append(service_name)
                     self.wredis.sadd('fail:2001', service_name)
+                    self.work_log.info('redis sadd fail:2001:'+service_name)
 
                 self.wredis.hmset(key, value)
                 self.wredis.expire(key, 7200)
