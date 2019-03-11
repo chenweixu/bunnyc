@@ -91,7 +91,7 @@ class check_web_service(object):
 
     def run_web_service_task(self):
         web_service = conf_data.get("web_service")
-        data = task_run(web_service)
+        data = self.task_run(web_service)
 
         key = 'queue:bunnyc'
         new_data = {
