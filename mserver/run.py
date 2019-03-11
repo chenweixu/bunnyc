@@ -14,6 +14,7 @@ from lib.mymysql import Bunnyc_mysql
 from lib.mserver_data import MserverHost
 from lib.mserver_data import MserverWebService
 from lib.mserver_data import MserverMemcached
+from lib.mserver_data import MserverTcpService
 
 
 def mserver_work_task():
@@ -40,6 +41,9 @@ def mserver_work_task():
     fail_2001 = set()       # web service 失败集合
     redis_sessice.delete('fail:2001')
 
+    fail_2010 = set()       # tcp service 失败集合
+    redis_sessice.delete('fail:2010')
+
     while 1:
         data = json.loads(redis_sessice.blpop("queue:bunnyc")[1])
         work_log.debug('mserver blpop redis cache success---------')
@@ -58,6 +62,10 @@ def mserver_work_task():
             elif data_type == 'memcache':
                 next_task = MserverMemcached(data, redis_sessice, work_mysql)
                 next_task.task_memcache_data()
+
+            elif data_type == 'tcp_service':
+                next_task = MserverTcpService(data, redis_sessice)
+                next_task.run(fail_set=fail_2010)
 
         except Exception as e:
             work_log.error('mserver_work_task run error')

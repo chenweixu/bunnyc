@@ -28,7 +28,7 @@ class MserverHost(object):
 
         if new_data:
             try:
-                key = 'moniter:'+str(new_data.get('mess_code'))+':'+new_data.get('strid')
+                key = 'monitor:'+str(new_data.get('mess_code'))+':'+new_data.get('strid')
                 self.wredis.hmset(key, new_data)
                 self.wredis.expire(key, 7200)
                 self.work_log.debug('linux data to redis success')
@@ -69,7 +69,7 @@ class MserverWebService(object):
             else:
                 status_info = "error"
 
-            key = "moniter:"+ str(self.data.get("mess_code")) + ":" + i.get('name')
+            key = "monitor:"+ str(self.data.get("mess_code")) + ":" + i.get('name')
             value = {
                 "type": self.data.get("type"),
                 "name": i.get('name'),
@@ -139,7 +139,7 @@ class MserverMemcached(object):
         self.work_log.debug(str(self.data))
         self.work_log.debug('---------------------------------------')
         try:
-            key = 'moniter:'+str(self.data.get('mess_code'))+':'+self.data.get('strid')
+            key = 'monitor:'+str(self.data.get('mess_code'))+':'+self.data.get('strid')
             self.wredis.hmset(key, self.data)
             self.wredis.expire(key, 7200)
             self.work_log.debug('memcached data to redis success')
@@ -149,3 +149,40 @@ class MserverMemcached(object):
         except Exception as e:
             self.work_log.error('memcached data to redis or mysql error')
             self.work_log.error(str(e))
+
+class MserverTcpService(object):
+    """docstring for MserverTcpService"""
+    def __init__(self, data, wredis):
+        super(MserverTcpService, self).__init__()
+        self.data = data
+        self.wredis = wredis
+        self.work_log = My_log().get_log()
+
+    def run(self, fail_set):
+        self.work_log.debug('MserverTcpService start')
+        body = self.data.get('body')
+        mess_code = self.data.get('mess_code')
+        for service_name, service_value in body.items():
+            for i in service_value:
+                key = i[0]
+                value = i[1]
+                rkey = "monitor:"+ str(mess_code) + ":" + key
+                self.wredis.set(rkey, value, ex=7200)
+                self.work_log.debug('TcpService data to redis success, key: %s' % rkey)
+
+                if value == 0 and key not in fail_set:
+                    pass
+
+                elif value == 0 and key in fail_set:
+                    fail_set.remove(key)
+                    self.wredis.srem('fail:2010', key)
+                    self.wredis.sadd('restore:2010', key)
+                    self.work_log.info('redis srem fail:2010 | '+key)
+
+                elif value !=0 and key in fail_set:
+                    pass
+
+                elif value !=0 and key not in fail_set:
+                    fail_set.add(key)
+                    self.wredis.sadd('fail:2010', key)
+                    self.work_log.info('redis sadd fail:2010 | '+key)

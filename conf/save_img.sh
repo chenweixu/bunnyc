@@ -25,8 +25,8 @@ img_file=$img_dir/chenwx_${container}_${version}.tar
 rm $img_file
 docker save chenwx/$container:$version > $img_file
 
-# moniter
-container=moniter
+# monitor
+container=monitor
 img_file=$img_dir/chenwx_${container}_${version}.tar
 
 rm $img_file

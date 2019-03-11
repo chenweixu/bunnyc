@@ -44,6 +44,7 @@ class My_log(object):
     def get_log(self):
         return self.logger
 
+
 class check_web_service(object):
     """docstring for check_web_service"""
     def __init__(self):
@@ -63,7 +64,8 @@ class check_web_service(object):
         if code == 9:
             time.sleep(2)
             code = self.get_url(url)
-            work_log.error('check url timeoute, status: 9 '+str(url))
+            if code == 9:
+                work_log.error('check url timeoute, status: 9 '+str(url))
 
         mess = {
             'name': name,
@@ -111,6 +113,7 @@ class check_network_tcp(object):
         port = ip_port.split(':')[1]
         try:
             tn = telnetlib.Telnet(ip, port=port, timeout=3)
+            tn.close()
             # 检查正常
             work_log.debug("tcp check success, desc_host: %s ,port: %s" % (ip, str(port)))
             return [ip_port, 0]
@@ -126,10 +129,12 @@ class check_network_tcp(object):
 
     def run_network_tcp_port_task(self):
         tcp_service = conf_data.get("network_tcp")
+        work_log.debug('network_tcp check start')
         mess = {}
-        for service_name in tcp_service:
 
-            pool = ThreadPool(10)
+
+        for service_name in tcp_service:
+            pool = ThreadPool(30)
             result = []
             for addr in tcp_service.get(service_name):
                 result.append(pool.apply_async(self.port_check, (addr,)))
@@ -151,6 +156,8 @@ class check_network_tcp(object):
             'ctime': time.strftime("%Y-%m-%d %H:%M:%S")
         }
         set_redis(key, json.dumps(new_data))
+        work_log.debug('set redis queue')
+        work_log.debug(str(new_data))
 
 
 def set_redis(key, value):
@@ -162,7 +169,6 @@ def set_redis(key, value):
         host=redis_host, port=redis_port, db=redis_db, decode_responses=True
     )
     r.rpush(key, value)
-    r.close()
 
 
 def main():
@@ -173,13 +179,22 @@ def main():
 
         if atime >= second_20:
             second_20 = atime + 20
-            tcp_service = check_network_tcp()
-            tcp_service.run_network_tcp_port_task()
 
         if atime >= minute_1:
             minute_1 = atime + 60
-            web = check_web_service()
-            web.run_web_service_task()
+            try:
+                web = check_web_service()
+                web.run_web_service_task()
+            except Exception as e:
+                work_log.error('check_web_service error')
+                work_log.error(str(e))
+
+            try:
+                tcp_service = check_network_tcp()
+                tcp_service.run_network_tcp_port_task()
+            except Exception as e:
+                work_log.error('check_tcp_service error')
+                work_log.error(str(e))
 
         if atime >= minute_5:
             minute_5 = atime + 300
@@ -197,7 +212,4 @@ if __name__ == '__main__':
     logfile = work_dir / app_conf.get("log")
     work_log = My_log(logfile, app_conf.get("log_revel")).get_log()
 
-    # main()
-
-    tcp_service = check_network_tcp()
-    tcp_service.run_network_tcp_port_task()
+    main()

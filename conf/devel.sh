@@ -35,7 +35,7 @@ else
     cp $conf_file $work_dir/bserver/conf.yaml
     cp $conf_file $work_dir/mserver/conf.yaml
     cp $conf_file $work_dir/gserver/conf.yaml
-    cp $conf_file $work_dir/moniter/conf.yaml
+    cp $conf_file $work_dir/monitor/conf.yaml
     cp $conf_file $work_dir/alarm/conf.yaml
     echo 'copy devel.yaml to all service'
 fi

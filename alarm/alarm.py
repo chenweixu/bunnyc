@@ -12,8 +12,6 @@ import yaml
 import time
 from pathlib import Path
 
-# crontab: */10 * * * * /opt/app/bunnyc/alarm/alarm.py
-
 conf_file = str(Path(__file__).resolve().parent / "conf.yaml")
 conf_data = yaml.load(open(conf_file, "r").read(), Loader=yaml.FullLoader)
 sms_api = conf_data.get("sms_conf").get("api")
@@ -55,12 +53,12 @@ class check_web_service(object):
     def get_task_info(self, redis_sessice, task):
         data = []
         for i in task:
-            moniter_key = "moniter:2001:" + i
+            monitor_key = "monitor:2001:" + i
             alarm_key = "alarm:2001:" + i
             alarm_value = redis_sessice.get(alarm_key)
             if not alarm_value:
                 work_log.debug(alarm_key + " not in redis")
-                value = redis_sessice.hget(moniter_key, "status")
+                value = redis_sessice.hget(monitor_key, "status")
                 data.append(i + ":" + str(value))
                 redis_sessice.set(alarm_key, 0, ex=7200)
                 work_log.debug(alarm_key + " set ex 7200")
@@ -91,13 +89,71 @@ class check_web_service(object):
 
         if restore:
             try:
-                mess = set_sms_mess("WebService检查恢复: ", restore)
+                mess = set_sms_mess("WebService检查恢复: ", list(restore))
                 for i in mess:
                     send_sms_mess(i)
-                r.delete("restore:2001")        # 删除恢复任务队列集合
                 for i in restore:
                     alarm_key = "alarm:2001:" + i
                     r.delete(alarm_key)         # 删除已告警状态
+                    work_log.info('service restore: %s, delete redus alarm_key: %s' % (i, alarm_key))
+                r.delete("restore:2001")        # 删除恢复任务队列集合
+            except Exception as e:
+                work_log.error('operating restore task error')
+                work_log.error(str(e))
+
+
+class Check_Tcp_Service(object):
+    """docstring for Check_Tcp_Service"""
+    def __init__(self):
+        super(Check_Tcp_Service, self).__init__()
+
+    def fail_task(self, redis_sessice, data):
+        new_data = []
+        for i in data:
+            alarm_key = "alarm:2010:" + i
+            alarm_value = redis_sessice.get(alarm_key)
+            if not alarm_value:
+                work_log.debug(alarm_key + " not in redis")
+                new_data.append(i)
+                redis_sessice.set(alarm_key, 0, ex=7200)
+            else:
+                work_log.debug(alarm_key + " in redis, no add task")
+        return new_data
+
+    def start(self):
+        r = redis_link()
+
+        fail_list = r.smembers("fail:2010")
+        restore_list = r.smembers("restore:2010")
+
+        work_log.info("get fail:2010: " + str(fail_list))
+        work_log.info("get restore:2010: " + str(restore_list))
+
+        if not fail_list and not restore_list:
+            # 没有故障信息和恢复信息
+            work_log.info("check tcp_service all success")
+            return True
+
+        if fail_list:
+            try:
+                data = self.fail_task(r, fail_list)
+                mess = set_sms_mess("TCP服务检查故障: ", data)
+                for i in mess:
+                    send_sms_mess(i)
+            except Exception as e:
+                work_log.error('operating fail task error')
+                work_log.error(str(e))
+
+        if restore_list:
+            try:
+                mess = set_sms_mess("TCP服务检查恢复: ", list(restore_list))
+                for i in mess:
+                    send_sms_mess(i)
+                for i in restore_list:
+                    alarm_key = "alarm:2010:" + i
+                    r.delete(alarm_key)         # 删除已告警状态
+                    work_log.info('service restore: %s, delete redus alarm_key: %s' % (i, alarm_key))
+                r.delete("restore:2010")        # 删除恢复任务队列集合
             except Exception as e:
                 work_log.error('operating restore task error')
                 work_log.error(str(e))
@@ -117,7 +173,6 @@ def set_sms_mess(head_mess, data):
         mess = data[0:20]
         del data[0:20]
         all_mess.append(head_mess + " ".join(mess))
-        all_mess.append("" + " ".join(mess))
     return all_mess
 
 
@@ -146,6 +201,9 @@ def main():
             second_20 = atime + 20
             web_service = check_web_service()
             web_service.start()
+
+            tcp_service = Check_Tcp_Service()
+            tcp_service.start()
 
         if atime >= minute_1:
             minute_1 = atime + 60

@@ -1,6 +1,6 @@
 
 docker build -t chenwx/alarm:0.2 -f dockerfile/alarm.dockerfile .
-docker build -t chenwx/moniter:0.2 -f dockerfile/moniter.dockerfile .
+docker build -t chenwx/monitor:0.2 -f dockerfile/monitor.dockerfile .
 docker build -t chenwx/bserver:0.2 -f dockerfile/bserver.dockerfile .
 docker build -t chenwx/gserver:0.2 -f dockerfile/gserver.dockerfile .
 docker build -t chenwx/mserver:0.2 -f dockerfile/mserver.dockerfile .
@@ -9,11 +9,11 @@ docker build -t chenwx/mserver:0.2 -f dockerfile/mserver.dockerfile .
 docker run --name bserver -h bserver --net="host" -d chenwx/bserver:0.2
 docker run --name mserver -h mserver --net="host" -d chenwx/mserver:0.2
 docker run --name gserver -h gserver --net="host" -d chenwx/gserver:0.2
-docker run --name moniter -h moniter --net="host" -d chenwx/moniter:0.2
+docker run --name monitor -h monitor --net="host" -d chenwx/monitor:0.2
 docker run --name alarm -h alarm --net="host" -d chenwx/alarm:0.2
 
 docker stop alarm
-docker stop moniter
+docker stop monitor
 docker stop gserver
 docker stop mserver
 docker stop bserver
@@ -22,6 +22,11 @@ docker stop bmgr
 
 smembers fail:2001
 
-hgetall "moniter:2001:cd_69-17102"
+hgetall "monitor:2001:cd_69-17102"
 
 get "alarm:2001:dmz_41-17105"
+
+#===================================================================
+
+
+/opt/app/memcached/bin/memcached -d -m 8192 -c 10000 -p 21101 -P /opt/app/memcached/21101.pid

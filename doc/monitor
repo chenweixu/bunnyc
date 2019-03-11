@@ -6,7 +6,7 @@
 
 redis 存储
 key:
-    moniter:<type>:<name>
+    monitor:<type>:<name>
 
 vlaue:
 # web_service
