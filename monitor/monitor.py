@@ -90,6 +90,7 @@ class check_web_service(object):
         return Display
 
     def run_web_service_task(self):
+        work_log.info('run_web_service_task -------- start')
         web_service = conf_data.get("web_service")
         data = task_run(web_service)
 
@@ -101,6 +102,7 @@ class check_web_service(object):
             'ctime': time.strftime("%Y-%m-%d %H:%M:%S")
         }
         set_redis(key, json.dumps(new_data))
+        work_log.info('run_web_service_task -------- end')
 
 
 class check_network_tcp(object):
@@ -129,7 +131,7 @@ class check_network_tcp(object):
 
     def run_network_tcp_port_task(self):
         tcp_service = conf_data.get("network_tcp")
-        work_log.debug('network_tcp check start')
+        work_log.info('run_network_tcp_port_task -------- start')
         mess = {}
 
 
@@ -158,6 +160,7 @@ class check_network_tcp(object):
         set_redis(key, json.dumps(new_data))
         work_log.debug('set redis queue')
         work_log.debug(str(new_data))
+        work_log.info('run_network_tcp_port_task -------- end')
 
 
 def set_redis(key, value):
