@@ -7,7 +7,7 @@ FROM chenwx/python:3
 MAINTAINER chenwx "chenwx716@163.com"
 
 # install systemd pkg
-RUN apk add py3-cffi py3-cryptography
+RUN apk add --no-cache py3-cffi py3-cryptography
 
 # install python pkg
 ADD requirements.txt /usr/local/requirements.txt

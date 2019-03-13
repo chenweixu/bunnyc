@@ -110,30 +110,38 @@ class check_network_tcp(object):
     def __init__(self):
         super(check_network_tcp, self).__init__()
 
-    def port_check(self, ip_port):
-        ip = ip_port.split(':')[0]
-        port = ip_port.split(':')[1]
+    def check_tcp_port(self, ip, port):
         try:
             tn = telnetlib.Telnet(ip, port=port, timeout=3)
             tn.close()
             # 检查正常
             work_log.debug("tcp check success, desc_host: %s ,port: %s" % (ip, str(port)))
-            return [ip_port, 0]
+            return 0
         except ConnectionRefusedError:
             # 主机通，端口不通
             work_log.error("port_check error desc_host: %s ,port: %s: return status 1, ConnectionRefusedError" % (ip, str(port)))
-            return [ip_port, 1]
+            return 1
         except Exception as e:
             # 其它原因，更多是对端主机和端口都不通
             work_log.error("port_check error desc_host: %s ,port: %s: return status 9, other error" % (ip, str(port)))
             work_log.error(str(e))
-            return [ip_port, 9]
+            return 9
+
+    def port_check(self, ip_port):
+        ip = ip_port.split(':')[0]
+        port = ip_port.split(':')[1]
+        code = self.check_tcp_port(ip, port)
+        if code != 0:
+            time.sleep(2)
+            code = self.check_tcp_port(ip, port)
+            if code != 0:
+                work_log.error('check tcp_port 2 times timeoute, status: 9 '+str(ip_port))
+        return [ip_port, code]
 
     def run_network_tcp_port_task(self):
         tcp_service = conf_data.get("network_tcp")
         work_log.info('run_network_tcp_port_task -------- start')
         mess = {}
-
 
         for service_name in tcp_service:
             pool = ThreadPool(30)
