@@ -1,0 +1,33 @@
+======================================================
+gserver 和 moniter 合并为远程数据采集模块
+    远程协议连接采集的各类数据
+    get data --> bserver --> mq --> mserver --> all_db
+    定时采集，1/5/10/30 分钟
+
+agent 增强为数据本地采集推送模块
+    # 尽量只采集原始数据，不进行计算加工
+    包括主机本地数据
+    agent data --> bserver --> mq --> mserver --> all_db
+
+bserver 增强为数据收集模块
+    此模块只完成原始数据的接收和转储，不加工数据
+    bserver --> mq --> mserver --> all_db
+
+mserver 增强为数据处理模块
+    此模块只完成原始数据到格式化数据的转换和存储工作
+    不判断数据的健康性
+    mserver --> all_db
+    redis_status_key: status:mess_code:strid
+        只存储每单元最近一次的状态数据，与历史数据无关
+
+alarm 增强为告警模块
+    redis_status_key --> alarm --> send_notice
+    后续使用 redis 的lua模块，每30s一次性取出状态检查失败的项目并存入 error_list
+    根据 error_list 的标识，拼装告警信息，并发送通知
+
+# mq
+    暂使用 redis list
+
+# all_db
+    包括 redis, mysql, influxdb, mongodb
+======================================================

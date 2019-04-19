@@ -11,13 +11,16 @@ echo "del run log: $work_dir"
 echo "=========================================="
 find $work_dir -name '*.log' -exec rm {} \;
 
+cp $conf_file $work_dir/conf.yaml
+echo 'copy devel.yaml to all service'
+
 create_container() {
     local container=$1
 
     echo "=========================================="
     echo "build: $container"
     echo "=========================================="
-    cp $conf_file $work_dir/$container/conf.yaml
+
     docker stop $container
     docker rm $container
     docker rmi chenwx/$container:$version
@@ -32,13 +35,7 @@ container_name=$1
 if [ $container_name ]; then
     create_container $container_name
 else
-    cp $conf_file $work_dir/bserver/conf.yaml
-    cp $conf_file $work_dir/mserver/conf.yaml
-    cp $conf_file $work_dir/gserver/conf.yaml
-    cp $conf_file $work_dir/monitor/conf.yaml
-    cp $conf_file $work_dir/alarm/conf.yaml
-    echo 'copy devel.yaml to all service'
+    echo 'no input arg'
 fi
-
 
 

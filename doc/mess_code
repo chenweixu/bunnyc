@@ -11,3 +11,10 @@
 # network
 2001        # web_service
 2010        # tcp_service
+
+
+# mess_type
+101     # 属于agent 上报的消息类型
+        # 发送中的消息不包含IP地址
+
+102    # 属于采集方消息，消息内容不需要处理

@@ -11,13 +11,14 @@ echo "del run log: $work_dir"
 echo "=========================================="
 find $work_dir -name '*.log' -exec rm {} \;
 
+
 create_container() {
     local container=$1
 
     echo "=========================================="
     echo "build: $container"
     echo "=========================================="
-    cp $conf_file $work_dir/$container/conf.yaml
+    cp $conf_file $work_dir/conf.yaml
     echo "stop container: $container"
     docker stop $container
     docker rm $container

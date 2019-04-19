@@ -1,18 +1,19 @@
 ---
 bserver:
   port:         8716
-  log:          log/bserver.log
-  pid:          log/bserver.pid
+  log:          bserver.log
+  pid:          bserver.pid
   log_revel:    10
 
 gserver:
-  log:          log/gserver.log
-  pid:          log/gserver.pid
+  log:          gserver.log
+  pid:          gserver.pid
+  udpserver:    ['10.2.1.5', 8716]
   log_revel:    10
 
 mserver:
-  log:          log/mserver.log
-  pid:          log/mserver.pid
+  log:          mserver.log
+  pid:          mserver.pid
   log_revel:    10
 
 alarm:

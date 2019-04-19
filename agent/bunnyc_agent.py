@@ -376,7 +376,7 @@ def work_task(name, task_env=None):
 
     mess = {
         'type': 'linux',
-        'mess_type': 563982389,
+        'mess_type': 101,
         'hostname': platform.node(),
         'system_release': platform.dist()[0],
         'system_version': platform.dist()[1],

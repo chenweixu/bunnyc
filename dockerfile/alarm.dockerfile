@@ -5,7 +5,7 @@
 FROM chenwx/bunnyc_platform:0.1
 MAINTAINER chenwx "chenwx716@163.com"
 
-# add bserver
+# add alarm
 ADD alarm /usr/local/alarm
 
 # CMD

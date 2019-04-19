@@ -1,4 +1,28 @@
 
+alarm 读取 redis 中的状态数据
+    维护一个 error_list, 对应 redis 中的 error_list
+    # 维护一个 notice_list, 对应 redis 中的 notice_list
+
+    redis_sessice.delete(error_list)
+
+    # error_list = set()
+    if status == 0 and sid not in error_list:
+        pass 无动作
+    elif status !=0 and sid in error_list:
+        pass 无动作
+    elif status !=0 and sid not in error_list:
+        error_list.add(sid)
+    elif status == 0 and sid in error_list:
+        恢复动作：
+        error_list.remove(sid)
+
+    notice_list 不在，而 error_list 有的情况，发送故障消息
+    notice_list 存在，而 error_list 无的情况，发送恢复消息
+    如果两个列表都存在，则pass
+    # notice_list 内标识2小时有效
 
 
 r.setex("name3", "value", 3)
+
+3. 获取 alarm:mess_code:strid 是否存在，否则发送短信通知, 并且新增此 key(ttl:7200)
+3. 如果存在 alarm:mess_code:strid 则不发送短信

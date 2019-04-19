@@ -29,4 +29,6 @@ get "alarm:2001:dmz_41-17105"
 #===================================================================
 
 
-/opt/app/memcached/bin/memcached -d -m 8192 -c 10000 -p 21101 -P /opt/app/memcached/21101.pid
+/opt/app/memcached/bin/memcached -d -m 50 -c 100 -p 21101 -P /opt/app/memcached/21101.pid
+/opt/app/memcached/bin/memcached -d -m 50 -c 100 -p 21102 -P /opt/app/memcached/21102.pid
+/opt/app/memcached/bin/memcached -d -m 50 -c 100 -p 21103 -P /opt/app/memcached/21103.pid
