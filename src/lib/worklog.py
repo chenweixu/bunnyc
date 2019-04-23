@@ -1,12 +1,5 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-# Email: chenwx716@163.com
-# DateTime: 2016-12-27 23:16:33
-__author__ = "chenwx"
-
 import os
 import logging
-
 
 class My_log(object):
     """docstring for My_log
@@ -25,7 +18,7 @@ class My_log(object):
             typea = self.logger.setLevel(level)
             typea = logging.FileHandler(log_file)
             formatter = logging.Formatter(
-                "[%(asctime)s]:%(filename)s:%(funcName)s:%(lineno)d :%(levelname)s: %(message)s"
+                '[%(asctime)s]:%(filename)s:%(funcName)s:%(lineno)d :%(levelname)s: %(message)s'
             )
             typea.setFormatter(formatter)
             self.logger.addHandler(typea)

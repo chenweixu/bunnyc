@@ -1,14 +1,14 @@
 ---
-bserver:
+bproxy:
   port:         8716
-  log:          bserver.log
-  pid:          bserver.pid
+  log:          bproxy.log
+  pid:          bproxy.pid
   log_revel:    10
 
 gserver:
   log:          gserver.log
   pid:          gserver.pid
-  udpserver:    ['10.2.1.5', 8716]
+  mess_server:    ['10.2.1.5', 8716]
   log_revel:    10
 
 mserver:
@@ -24,6 +24,7 @@ alarm:
 monitor:
   log:          monitor.log
   pid:          monitor.pid
+  mess_server:    ['127.0.0.1', 8716]
   log_revel:    10
 
 #===================================================================

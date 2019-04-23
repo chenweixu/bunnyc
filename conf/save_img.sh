@@ -4,8 +4,8 @@ version=0.2
 
 img_dir=/data/share/docker_images
 
-# bserver
-container=bserver
+# bproxy
+container=bproxy
 img_file=$img_dir/chenwx_${container}_${version}.tar
 
 rm $img_file

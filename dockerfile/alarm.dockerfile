@@ -6,7 +6,8 @@ FROM chenwx/bunnyc_platform:0.1
 MAINTAINER chenwx "chenwx716@163.com"
 
 # add alarm
-ADD alarm /usr/local/alarm
+ADD src/alarm.py /usr/local/
+ADD src/conf.yaml /usr/local/
 
 # CMD
 CMD python3 /usr/local/alarm/alarm.py

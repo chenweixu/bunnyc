@@ -11,7 +11,7 @@ echo "del run log: $work_dir"
 echo "=========================================="
 find $work_dir -name '*.log' -exec rm {} \;
 
-cp $conf_file $work_dir/conf.yaml
+cp $conf_file $work_dir/src/conf.yaml
 echo 'copy devel.yaml to all service'
 
 create_container() {
@@ -35,7 +35,7 @@ container_name=$1
 if [ $container_name ]; then
     create_container $container_name
 else
-    echo 'no input arg'
+    echo 'no input arg, copy conf file'
 fi
 
 

@@ -30,4 +30,9 @@ create_container() {
 
 container_name=$1
 
-create_container $container_name
+if [ $container_name ]; then
+    create_container $container_name
+else
+    echo 'no input arg, copy conf file'
+fi
+

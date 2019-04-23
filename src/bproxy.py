@@ -88,7 +88,7 @@ class Net_tcp_server(threading.Thread):
         符合则添加上IP和时间字段，再传入待处理队列中
         存在的问题：还没有对 TCP长报文 做应对,后续将进行解决
         """
-        listen_port = conf_data('bserver', 'port')
+        listen_port = conf_data('bproxy', 'port')
 
         work_log.info('listen tcp thread start')
 
@@ -105,7 +105,7 @@ class Net_tcp_server(threading.Thread):
         while True:
             connection, client_addr = server.accept()
             client_ip = client_addr[0]
-            data = connection.recv(2048)
+            data = connection.recv(4096)
             connection.close()
             work_log.debug('input tcp data from ip: ' + client_ip)
             try:
@@ -122,7 +122,8 @@ class Net_tcp_server(threading.Thread):
                 else:
                     work_log.error(client_ip + ',' + 'mess_type error')
             except ValueError as e:
-                work_log.error(client_ip + ': ' + str(e))
+                work_log.info(client_ip + ': ' + str(e))
+                work_log.info('not data')
             except Exception as e:
                 work_log.error(client_ip + ': ' + str(e))
         server.close()
@@ -140,7 +141,7 @@ class Net_udp_server(threading.Thread):
         存在的问题：没有对 udp长报文 做应对，这个有点麻烦，决定短消息用UDP，长消息用TCP
         """
 
-        listen_port = conf_data('bserver', 'port')
+        listen_port = conf_data('bproxy', 'port')
 
         work_log.info('listen udp thread start')
         try:
@@ -160,7 +161,7 @@ class Net_udp_server(threading.Thread):
                 except Exception:
                     continue
 
-                if info.get('mess_type') == 563982389:
+                if info.get('mess_type') == 101:
                     info['ip'] = addr[0]
                     info['gtime'] = time.strftime('%Y-%m-%d %H:%M:%S')
                     self.queue.put(info)
@@ -197,15 +198,11 @@ class Write_redis_queue(threading.Thread):
 
         while 1:
             data = self.queue.get()
-
-            work_log.debug(str(data))
-            ip = data.get('ip')
-
             try:
                 r.put(json.dumps(data))
-                work_log.debug('write redis queue success: ' + ip)
+                work_log.debug('write redis queue success')
             except Exception as e:
-                work_log.error('write redis queue error: ' + ip)
+                work_log.error('write redis queue error')
                 work_log.error(str(e))
 
 
@@ -242,7 +239,7 @@ def main():
 if __name__ == '__main__':
     work_dir = Path(__file__).resolve().parent
 
-    logfile = work_dir / conf_data('bserver', 'log')
-    log_revel = conf_data('bserver', 'log_revel')
+    logfile = work_dir / conf_data('bproxy', 'log')
+    log_revel = conf_data('bproxy', 'log_revel')
     work_log = My_log(logfile, log_revel).get_log()
     main()

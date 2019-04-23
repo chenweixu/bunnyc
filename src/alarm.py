@@ -12,11 +12,6 @@ import yaml
 import time
 from pathlib import Path
 
-conf_file = str(Path(__file__).resolve().parent / "conf.yaml")
-conf_data = yaml.load(open(conf_file, "r").read(), Loader=yaml.FullLoader)
-sms_api = conf_data.get("sms_conf").get("api")
-app_conf = conf_data.get("alarm")
-
 
 class My_log(object):
     """docstring for My_log
@@ -160,9 +155,8 @@ class Check_Tcp_Service(object):
 
 
 def redis_link():
-    redis_conf = conf_data.get("redis")
-    host = redis_conf.get("host")
-    port = redis_conf.get("port")
+    host = conf_data('redis','host')
+    port = conf_data('redis', 'port')
     r = redis.StrictRedis(host=host, port=port, decode_responses=True)
     return r
 
@@ -177,10 +171,11 @@ def set_sms_mess(head_mess, data):
 
 
 def send_sms_mess(data):
-    mess = {"body": data, "phone": conf_data.get("sms_conf").get("admin_phone")}
+    mess = {"body": data, "phone": conf_data("sms_conf","admin_phone")}
     work_log.info("send sms mess:")
     work_log.info(str(mess))
     try:
+        sms_api = conf_data('sms_conf', 'api')
         r = requests.get(sms_api, params=mess, timeout=5)
         code = r.status_code
         if code == 200:
@@ -189,6 +184,14 @@ def send_sms_mess(data):
     except Exception as e:
         work_log.error("request sms api error")
         work_log.error(str(e))
+
+def conf_data(style, age=None):
+    conf_file = work_dir / 'conf.yaml'
+    data = yaml.load(conf_file.read_text(), Loader=yaml.FullLoader)
+    if not age:
+        return data.get(style)
+    else:
+        return data.get(style).get(age)
 
 
 def main():
@@ -202,8 +205,8 @@ def main():
             web_service = check_web_service()
             web_service.start()
 
-            tcp_service = Check_Tcp_Service()
-            tcp_service.start()
+            # tcp_service = Check_Tcp_Service()
+            # tcp_service.start()
 
         if atime >= minute_1:
             minute_1 = atime + 60
@@ -219,6 +222,6 @@ def main():
 
 if __name__ == "__main__":
     work_dir = Path(__file__).resolve().parent
-    logfile = work_dir / app_conf.get("log")
-    work_log = My_log(logfile, app_conf.get("log_revel")).get_log()
+    logfile = work_dir / conf_data('alarm','log')
+    work_log = My_log(logfile, conf_data('alarm',"log_revel")).get_log()
     main()

@@ -19,7 +19,7 @@ from signal import SIGTERM
 server_addr = ('10.2.1.5', 8716)
 
 tcp_protocol = False  # True | False
-debug = False  # True | False
+debug = True  # True | False
 
 if platform.dist()[0] == 'fedora' and int(platform.dist()[1]) > 28:
     ss_version = 'high'

@@ -1,14 +1,15 @@
 # 2019-03-27 16:45:50
 # Version: 0.1
-# bserver
+# bproxy
 
 FROM chenwx/bunnyc_platform:0.1
 MAINTAINER chenwx "chenwx716@163.com"
 
-# add bserver
-ADD bserver.py /usr/local/
+# add bproxy
+ADD src/bproxy.py /usr/local/
+ADD src/conf.yaml /usr/local/
 
 # CMD
-CMD python3 /usr/local/bserver.py
+CMD python3 /usr/local/bproxy.py
 
 EXPOSE 8716

@@ -9,15 +9,12 @@ import requests
 import logging
 import os
 import yaml
-import redis
 import time
 import json
+import socket
 from pathlib import Path
 from multiprocessing.dummy import Pool as ThreadPool
 
-conf_file = str(Path(__file__).resolve().parent / "conf.yaml")
-conf_data = yaml.load(open(conf_file, "r").read(), Loader=yaml.FullLoader)
-app_conf = conf_data.get("monitor")
 
 class My_log(object):
     """docstring for My_log
@@ -65,7 +62,7 @@ class check_web_service(object):
             time.sleep(2)
             code = self.get_url(url)
             if code == 9:
-                work_log.error('check url timeoute, status: 9 '+str(url))
+                work_log.info(f'web serice check: failure, timeoute, status: 9, {url}')
 
         mess = {
             'name': name,
@@ -91,17 +88,19 @@ class check_web_service(object):
 
     def run_web_service_task(self):
         work_log.info('run_web_service_task -------- start')
-        web_service = conf_data.get("web_service")
+        web_service = conf_data("web_service")
         data = self.task_run(web_service)
 
-        key = 'queue:bunnyc'
         new_data = {
+            "mess_type": 102,
             'mess_code': 2001,
             'type': 'web_service',
             'body': data,
             'ctime': time.strftime("%Y-%m-%d %H:%M:%S")
         }
-        set_redis(key, json.dumps(new_data))
+        work_log.debug(str(new_data))
+        send_mess_udp(new_data)
+        work_log.debug('send data success')
         work_log.info('run_web_service_task -------- end')
 
 
@@ -119,12 +118,14 @@ class check_network_tcp(object):
             return 0
         except ConnectionRefusedError:
             # 主机通，端口不通
-            work_log.error("port_check error desc_host: %s ,port: %s: return status 1, ConnectionRefusedError" % (ip, str(port)))
+            # work_log.info("port_check error desc_host: %s ,port: %s: return status 1, ConnectionRefusedError" % (ip, str(port)))
+            work_log.info(f"tcp port check failure,ip:{ip}, port:{port} host not linke, return status code 1, ConnectionRefusedError")
             return 1
         except Exception as e:
             # 其它原因，更多是对端主机和端口都不通
-            work_log.error("port_check error desc_host: %s ,port: %s: return status 9, other error" % (ip, str(port)))
-            work_log.error(str(e))
+            # work_log.error("port_check error desc_host: %s ,port: %s: return status 9, other error" % (ip, str(port)))
+            work_log.info(f"tcp port check failure,ip:{ip}, port:{port}, return status code 9, other error")
+            work_log.info(str(e))
             return 9
 
     def port_check(self, ip_port):
@@ -135,11 +136,11 @@ class check_network_tcp(object):
             time.sleep(2)
             code = self.check_tcp_port(ip, port)
             if code != 0:
-                work_log.error('check tcp_port 2 times timeoute, status: 9 '+str(ip_port))
+                work_log.info('check tcp_port 2 times timeoute, status: 9 '+str(ip_port))
         return [ip_port, code]
 
     def run_network_tcp_port_task(self):
-        tcp_service = conf_data.get("network_tcp")
+        tcp_service = conf_data("network_tcp")
         work_log.info('run_network_tcp_port_task -------- start')
         mess = {}
 
@@ -158,29 +159,41 @@ class check_network_tcp(object):
                     Display.append(vle)
             mess[service_name] = Display
 
-        key = 'queue:bunnyc'
         new_data = {
+            "mess_type": 102,
             'mess_code': 2010,
             'type': 'tcp_service',
             'body': mess,
             'ctime': time.strftime("%Y-%m-%d %H:%M:%S")
         }
-        set_redis(key, json.dumps(new_data))
-        work_log.debug('set redis queue')
+
+        send_mess_udp(new_data)
+        work_log.debug('send data success')
         work_log.debug(str(new_data))
         work_log.info('run_network_tcp_port_task -------- end')
 
+def send_mess_udp(data):
+    # 通过 udp 发送数据
+    # udp 是无状态的协议，没有发送失败这种情况，
+    mess = json.dumps(data).encode('utf-8')
+    server_addr = tuple(conf_data('monitor', 'mess_server'))
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.sendto(mess, server_addr)
+        s.close()
+    except socket.error:
+        work_log.error('udp socket error')
+    except Exception as e:
+        work_log.error('send data to udp socket error')
+        work_log.error(str(e))
 
-def set_redis(key, value):
-    redis_conf = conf_data.get("redis")
-    redis_host = redis_conf.get("host")
-    redis_port = redis_conf.get("port")
-    redis_db = redis_conf.get("queue_db")
-    r = redis.StrictRedis(
-        host=redis_host, port=redis_port, db=redis_db, decode_responses=True
-    )
-    r.rpush(key, value)
-
+def conf_data(style, age=None):
+    conf_file = work_dir / 'conf.yaml'
+    data = yaml.load(conf_file.read_text(), Loader=yaml.FullLoader)
+    if not age:
+        return data.get(style)
+    else:
+        return data.get(style).get(age)
 
 def main():
     second_20 = minute_1 = minute_5 = minute_10 = minute_30 = 0
@@ -220,7 +233,7 @@ def main():
 
 if __name__ == '__main__':
     work_dir = Path(__file__).resolve().parent
-    logfile = work_dir / app_conf.get("log")
-    work_log = My_log(logfile, app_conf.get("log_revel")).get_log()
+    logfile = work_dir / conf_data('monitor', 'log')
+    work_log = My_log(logfile, conf_data('monitor', 'log_revel')).get_log()
 
     main()

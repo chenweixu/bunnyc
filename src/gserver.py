@@ -142,7 +142,7 @@ class SendBserver(threading.Thread):
         # 通过 udp 发送数据
         # udp 是无状态的协议，没有发送失败这种情况，
         # server_addr = ('10.2.1.5', 8716)
-        server_addr = tuple(conf_data('gserver', 'udpserver'))
+        server_addr = tuple(conf_data('gserver', 'mess_server'))
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.sendto(mess, server_addr)
