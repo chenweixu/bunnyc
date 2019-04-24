@@ -30,10 +30,10 @@ class Work_task(object):
             )
         return redis_line
 
-    def task_linux_host_data(self,data,wredis,wmysql):
+    def task_linux_host_data(self,data,wredis,wmysql, host_to_as):
         # 先将原始的数据格式转换为规范的格式
         # 如果转换成功，则先插入 redis 再插入 mysql
-        host_to_as = conf_data('host_to_as')
+
         info = Format_data()
         try:
             new_data = info.format_host_data(data, host_to_as)
@@ -138,6 +138,7 @@ class Work_task(object):
         work_log.info('mserver task thread start')
         redis_sessice = self.redis_sessice()
         mysql_sessice = BunnycDB(self.get_bunnyc_dblink())
+        host_to_as = conf_data('host_to_as')
 
         while 1:
             data = json.loads(redis_sessice.blpop("queue:bunnyc")[1])
@@ -147,7 +148,7 @@ class Work_task(object):
             try:
                 data_type = data.get('type')
                 if data_type == 'linux':
-                    self.task_linux_host_data(data,redis_sessice, mysql_sessice)
+                    self.task_linux_host_data(data,redis_sessice, mysql_sessice, host_to_as)
 
                 elif data_type == 'web_service':
                     self.task_web_service(data, redis_sessice)
