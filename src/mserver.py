@@ -64,7 +64,7 @@ class Work_task(object):
                     wmysql.inster_t_host_ram(new_data)
                     work_log.debug('linux data 1002 to mysql success')
                 else:
-                    work_log.error('wmysql: ignore mess_code')
+                    work_log.info(f'wmysql: ignore mess_code: {mess_code}')
             except Exception as e:
                 work_log.error('linux data to mysql error')
                 work_log.error(str(e))
