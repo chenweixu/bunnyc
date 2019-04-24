@@ -109,7 +109,11 @@ class Net_tcp_server(threading.Thread):
             connection.close()
             work_log.debug('input tcp data from ip: ' + client_ip)
             try:
-                info = json.loads(data.decode('utf-8'))
+                try:
+                    info = json.loads(data.decode('utf-8'))
+                except Exception as e:
+                    continue
+
                 if info.get('mess_type') == 101:
                     info['ip'] = client_ip
                     info['gtime'] = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -173,6 +177,7 @@ class Net_udp_server(threading.Thread):
                     self.queue.put(info)
                     work_log.debug('mess_type 102 to queue')
                 else:
+                    work_log.debug(str(info))
                     work_log.error(addr[0] + ',' + 'mess_type error')
             except ValueError as e:
                 work_log.error(addr[0] + ': ' + str(e))
@@ -192,9 +197,9 @@ class Write_redis_queue(threading.Thread):
 
     def run(self):
         work_log = My_log().get_log()
-        work_log.info('Write_redis_queue thread start success')
+        work_log.debug('Write_redis_queue thread start success')
         r = RedisQueue()
-        work_log.info('Write_redis_queue line redis success')
+        work_log.debug('Write_redis_queue line redis success')
 
         while 1:
             data = self.queue.get()
