@@ -90,6 +90,7 @@ class check_web_service(object):
         work_log.info('run_web_service_task -------- start')
         web_service = conf_data("web_service")
         data = self.task_run(web_service)
+        work_log.debug(str(data))
 
         new_data = {
             "mess_type": 102,
@@ -100,7 +101,6 @@ class check_web_service(object):
         }
         work_log.debug(str(new_data))
         send_mess_udp(new_data)
-        work_log.debug('send data success')
         work_log.info('run_web_service_task -------- end')
 
 
@@ -176,11 +176,12 @@ def send_mess_udp(data):
     # 通过 udp 发送数据
     # udp 是无状态的协议，没有发送失败这种情况，
     mess = json.dumps(data).encode('utf-8')
-    server_addr = tuple(conf_data('monitor', 'mess_server'))
+
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         s.sendto(mess, server_addr)
         s.close()
+        work_log.debug('send udp mess success')
     except socket.error:
         work_log.error('udp socket error')
     except Exception as e:
@@ -235,5 +236,6 @@ if __name__ == '__main__':
     work_dir = Path(__file__).resolve().parent
     logfile = work_dir / conf_data('monitor', 'log')
     work_log = My_log(logfile, conf_data('monitor', 'log_revel')).get_log()
+    server_addr = tuple(conf_data('monitor', 'mess_server'))
 
     main()
