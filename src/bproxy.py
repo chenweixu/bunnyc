@@ -157,7 +157,7 @@ class Net_udp_server(threading.Thread):
             work_log.error(str(e))
 
         while True:
-            data, addr = s.recvfrom(4096)
+            data, addr = s.recvfrom(102400)
             work_log.debug('input udp data from ip: ' + addr[0])
             try:
                 try:
