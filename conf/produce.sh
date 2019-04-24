@@ -18,7 +18,7 @@ create_container() {
     echo "=========================================="
     echo "build: $container"
     echo "=========================================="
-    cp $conf_file $work_dir/conf.yaml
+    cp $conf_file $work_dir/src/conf.yaml
     echo "stop container: $container"
     docker stop $container
     docker rm $container
