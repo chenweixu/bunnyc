@@ -161,7 +161,7 @@ class check_network_tcp(object):
 
         new_data = {
             "mess_type": 102,
-            'mess_code': 2010,
+            'mess_code': 2011,
             'type': 'tcp_service',
             'body': mess,
             'ctime': time.strftime("%Y-%m-%d %H:%M:%S")

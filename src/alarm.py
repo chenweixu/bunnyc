@@ -52,17 +52,37 @@ class check_web_service(object):
             alarm_key = "alarm:2001:" + i
             alarm_value = redis_sessice.get(alarm_key)
             if not alarm_value:
-                work_log.debug(alarm_key + " not in redis")
+                work_log.debug(i + " not in redis")
                 value = redis_sessice.hget(monitor_key, "status")
                 data.append(i + ":" + str(value))
                 redis_sessice.set(alarm_key, 0, ex=7200)
                 work_log.debug(alarm_key + " set ex 7200")
             else:
-                work_log.debug(alarm_key + " in redis, no add task")
+                work_log.debug(i + " in redis, no add task")
         return data
 
-    def start(self):
-        r = redis_link()
+    def start(self, r, fail_set):
+        data = r.keys(pattern='monitor:2001:*')
+        for i in data:
+            name = r.hget(i, 'name')
+            status = int(r.hget(i, 'status'))
+
+            if status == 0 and name not in fail_set:
+                pass
+            elif status == 0 and name in fail_set:
+                fail_set.remove(name)
+                r.srem('fail:2001', name)
+                r.sadd('restore:2001', name)
+                work_log.info(f'{name} is restore')
+            elif status != 0 and name not in fail_set:
+                fail_set.add(name)
+                r.sadd('fail:2001', name)
+                work_log.info(f'redis sadd fail:2001, {name}')
+
+            elif status != 0 and name in fail_set:
+                pass
+
+
         task = r.smembers("fail:2001")
         restore = r.smembers("restore:2001")
         work_log.debug("--------------------")
@@ -73,6 +93,7 @@ class check_web_service(object):
             return True
 
         if task:
+            # 失败队列中有任务
             try:
                 data = self.get_task_info(r, task)
                 mess = set_sms_mess("WebService检查故障: ", data)
@@ -105,24 +126,47 @@ class Check_Tcp_Service(object):
     def fail_task(self, redis_sessice, data):
         new_data = []
         for i in data:
-            alarm_key = "alarm:2010:" + i
+            alarm_key = "alarm:2011:" + i
             alarm_value = redis_sessice.get(alarm_key)
             if not alarm_value:
-                work_log.debug(alarm_key + " not in redis")
+                work_log.debug(i + " not in redis")
                 new_data.append(i)
                 redis_sessice.set(alarm_key, 0, ex=7200)
             else:
-                work_log.debug(alarm_key + " in redis, no add task")
+                work_log.debug(i + " in redis, no add task")
         return new_data
 
-    def start(self):
+    def start(self, r, fail_set):
         r = redis_link()
 
-        fail_list = r.smembers("fail:2010")
-        restore_list = r.smembers("restore:2010")
+        data = r.keys(pattern='monitor:2011:*')
+        for i in data:
+            name = ':'.join(i.split(':')[2:4])
+            status = int(r.get(i))
 
-        work_log.info("get fail:2010: " + str(fail_list))
-        work_log.info("get restore:2010: " + str(restore_list))
+            if status == 0 and name not in fail_set:
+                pass
+            elif status == 0 and name in fail_set:
+                # 恢复
+                fail_set.remove(name)
+                r.srem('fail:2011', name)
+                r.sadd('restore:2011', name)
+                work_log.info(f'{name} is restore')
+            elif status != 0 and name not in fail_set:
+                # 新故障
+                fail_set.add(name)
+                r.sadd('fail:2011', name)
+                work_log.info(f'redis sadd fail:2011, {name}')
+
+            elif status != 0 and name in fail_set:
+                pass
+
+
+        fail_list = r.smembers("fail:2011")
+        restore_list = r.smembers("restore:2011")
+
+        work_log.info("get fail:2011: " + str(fail_list))
+        work_log.info("get restore:2011: " + str(restore_list))
 
         if not fail_list and not restore_list:
             # 没有故障信息和恢复信息
@@ -145,10 +189,10 @@ class Check_Tcp_Service(object):
                 for i in mess:
                     send_sms_mess(i)
                 for i in restore_list:
-                    alarm_key = "alarm:2010:" + i
+                    alarm_key = "alarm:2011:" + i
                     r.delete(alarm_key)         # 删除已告警状态
                     work_log.info('service restore: %s, delete redus alarm_key: %s' % (i, alarm_key))
-                r.delete("restore:2010")        # 删除恢复任务队列集合
+                r.delete("restore:2011")        # 删除恢复任务队列集合
             except Exception as e:
                 work_log.error('operating restore task error')
                 work_log.error(str(e))
@@ -197,16 +241,25 @@ def conf_data(style, age=None):
 def main():
     second_20 = minute_1 = minute_5 = minute_10 = 0
     # 每1/5/10/30分钟进行一次的查询
+    redis_sessice = redis_link()
+
+    fail_2001 = set()       # web service 失败集合
+    redis_sessice.delete('fail:2001')
+
+    fail_2011 = set()       # tcp service 失败集合
+    redis_sessice.delete('fail:2011')
+
+
     while 1:
         atime = int(time.time())
 
         if atime >= second_20:
             second_20 = atime + 20
             web_service = check_web_service()
-            web_service.start()
+            web_service.start(redis_sessice, fail_2001)
 
-            # tcp_service = Check_Tcp_Service()
-            # tcp_service.start()
+            tcp_service = Check_Tcp_Service()
+            tcp_service.start(redis_sessice, fail_2011)
 
         if atime >= minute_1:
             minute_1 = atime + 60

@@ -1,7 +1,7 @@
 # 2019-03-06 08:24:39
-# Version: 0.1
+# Version: 0.2
 
-# docker build -t chenwx/bunnyc_platform:0.1 -f dockerfile/bunnyc_platform.dockerfile .
+# docker build -t chenwx/bunnyc_platform:0.2 -f dockerfile/bunnyc_platform.dockerfile .
 
 FROM chenwx/python:3
 MAINTAINER chenwx "chenwx716@163.com"

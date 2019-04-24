@@ -2,7 +2,7 @@
 # Version: 0.1
 # gserver
 
-FROM chenwx/bunnyc_platform:0.1
+FROM chenwx/bunnyc_platform:0.2
 MAINTAINER chenwx "chenwx716@163.com"
 
 # add bserver

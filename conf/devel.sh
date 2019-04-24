@@ -3,7 +3,7 @@
 work_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ && pwd )"
 cd $work_dir
 
-version=0.2
+version=0.3
 conf_file=$work_dir/conf/devel.yaml
 
 echo "=========================================="

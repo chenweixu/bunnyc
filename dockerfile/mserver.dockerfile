@@ -2,7 +2,7 @@
 # Version: 0.1
 # mserver
 
-FROM chenwx/bunnyc_platform:0.1
+FROM chenwx/bunnyc_platform:0.2
 MAINTAINER chenwx "chenwx716@163.com"
 
 # add mserver
@@ -11,4 +11,4 @@ ADD src/conf.yaml /usr/local/
 ADD src/lib /usr/local/lib
 
 # CMD
-CMD python3 /usr/local/mserver/run.py
+CMD python3 /usr/local/mserver.py
