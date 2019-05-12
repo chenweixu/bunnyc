@@ -145,7 +145,7 @@ class check_network_tcp(object):
         mess = {}
 
         for service_name in tcp_service:
-            pool = ThreadPool(30)
+            pool = ThreadPool(50)
             result = []
             for addr in tcp_service.get(service_name):
                 result.append(pool.apply_async(self.port_check, (addr,)))

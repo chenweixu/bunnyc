@@ -11,6 +11,6 @@ RUN apk add --no-cache py3-cffi py3-cryptography
 
 # install python pkg
 ADD requirements.txt /usr/local/requirements.txt
-RUN pip3 install --upgrade pip \
-    && pip3 install -r /usr/local/requirements.txt \
+RUN pip3 install --no-cache-dir --upgrade pip \
+    && pip3 install --no-cache-dir -r /usr/local/requirements.txt \
     && rm /usr/local/requirements.txt
