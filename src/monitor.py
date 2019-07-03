@@ -4,9 +4,9 @@
 # DateTime: 2019-02-28 12:59:26
 __author__ = "chenwx"
 
+import sys
 import telnetlib
 import requests
-import logging
 import os
 import yaml
 import time
@@ -14,32 +14,8 @@ import json
 import socket
 from pathlib import Path
 from multiprocessing.dummy import Pool as ThreadPool
-
-
-class My_log(object):
-    """docstring for My_log
-    日志服务的基类
-    """
-
-    def __init__(self, log_file=None, level=logging.WARNING):
-        super(My_log, self).__init__()
-
-        self.logger = logging.getLogger()
-        if not self.logger.handlers:
-            log_dir = os.path.dirname(log_file)
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-
-            typea = self.logger.setLevel(level)
-            typea = logging.FileHandler(log_file)
-            formatter = logging.Formatter(
-                "[%(asctime)s]:%(filename)s:%(funcName)s:%(lineno)d :%(levelname)s: %(message)s"
-            )
-            typea.setFormatter(formatter)
-            self.logger.addHandler(typea)
-
-    def get_log(self):
-        return self.logger
+from lib.worklog import My_log
+from lib.daemon import daemon
 
 
 class check_web_service(object):
@@ -196,7 +172,8 @@ def conf_data(style, age=None):
     else:
         return data.get(style).get(age)
 
-def main():
+
+def work_start():
     second_20 = minute_1 = minute_5 = minute_10 = minute_30 = 0
     # 每1/5/10/30分钟进行一次的查询
     while 1:
@@ -232,9 +209,36 @@ def main():
 
         time.sleep(2)
 
+class work_daemon(daemon):
+    """docstring for work_daemon"""
+    def run(self):
+        work_start()
+
+def main():
+    if len(sys.argv) == 2:
+        daemon=work_daemon(pidfile)
+        if 'start' == sys.argv[1]:
+            work_log.info('------admin start daemon run ')
+            daemon.start()
+        elif 'stop' == sys.argv[1]:
+            work_log.info('------admin stop')
+            daemon.stop()
+        elif 'restart' == sys.argv[1]:
+            work_log.info('------admin restart')
+            daemon.restart()
+        else:
+            print('unkonow command')
+            sys.exit(2)
+        sys.exit(0)
+    elif len(sys.argv) == 1:
+        work_start()
+
+
+
 if __name__ == '__main__':
     work_dir = Path(__file__).resolve().parent
     logfile = work_dir / conf_data('monitor', 'log')
+    pidfile = work_dir / conf_data('monitor', 'pid')
     work_log = My_log(logfile, conf_data('monitor', 'log_revel')).get_log()
     server_addr = tuple(conf_data('monitor', 'mess_server'))
 

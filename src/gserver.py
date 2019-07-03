@@ -6,10 +6,10 @@ __author__ = 'chenwx'
 '''主要用于采集一些设备的信息
 '''
 
+import sys
 import os
 import time
 import json
-import logging
 import socket
 import threading
 from pathlib import Path
@@ -18,31 +18,9 @@ from queue import Queue
 import yaml
 import redis
 from pymemcache.client import Client
+from lib.worklog import My_log
+from lib.daemon import daemon
 
-class My_log(object):
-    """docstring for My_log
-    日志服务的基类
-    """
-
-    def __init__(self, log_file=None, level=logging.WARNING):
-        super(My_log, self).__init__()
-
-        self.logger = logging.getLogger()
-        if not self.logger.handlers:
-            log_dir = os.path.dirname(log_file)
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-
-            typea = self.logger.setLevel(level)
-            typea = logging.FileHandler(log_file)
-            formatter = logging.Formatter(
-                "[%(asctime)s]:%(filename)s:%(funcName)s:%(lineno)d :%(levelname)s: %(message)s"
-            )
-            typea.setFormatter(formatter)
-            self.logger.addHandler(typea)
-
-    def get_log(self):
-        return self.logger
 
 class my_memcached(object):
     """docstring for my_memcached
@@ -174,7 +152,7 @@ def conf_data(style, age=None):
     else:
         return data.get(style).get(age)
 
-def work_task():
+def work_start():
     minute_1 = minute_5 = minute_10 = minute_30 = minute_60 = 0
     # 每1/5/10/30分钟进行一次的查询
     queue = Queue()
@@ -204,13 +182,35 @@ def work_task():
 
     mss_server.join()
 
+class work_daemon(daemon):
+    """docstring for work_daemon"""
+    def run(self):
+        work_start()
+
 def main():
-    work_log.info('------admin start')
-    work_task()
+    if len(sys.argv) == 2:
+        daemon=work_daemon(pidfile)
+        if 'start' == sys.argv[1]:
+            work_log.info('------admin start daemon run ')
+            daemon.start()
+        elif 'stop' == sys.argv[1]:
+            work_log.info('------admin stop')
+            daemon.stop()
+        elif 'restart' == sys.argv[1]:
+            work_log.info('------admin restart')
+            daemon.restart()
+        else:
+            print('unkonow command')
+            sys.exit(2)
+        sys.exit(0)
+    elif len(sys.argv) == 1:
+        work_log.info('------admin start')
+        work_start()
 
 if __name__ == '__main__':
     work_dir = Path(__file__).resolve().parent
     logfile = work_dir / conf_data('gserver', 'log')
+    pidfile = work_dir / conf_data('gserver', 'pid')
     log_revel = conf_data('gserver', 'log_revel')
     work_log = My_log(logfile, log_revel).get_log()
     main()

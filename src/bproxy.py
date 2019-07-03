@@ -12,8 +12,8 @@ wdb thread 从队列取数据，直接写入 redis 队列中
 mess_type: 定义一个可以接收的数据包前提字段
 '''
 import os
+import sys
 import time
-import logging
 import threading
 import socket
 import json
@@ -21,6 +21,8 @@ from pathlib import Path
 from queue import Queue
 import yaml
 import redis
+from lib.worklog import My_log
+from lib.daemon import daemon
 
 class RedisQueue(object):
     """docstring for RedisQueue"""
@@ -49,32 +51,6 @@ class RedisQueue(object):
 
     def size(self):
         return self.r.llen(self.queue)
-
-
-class My_log(object):
-    """docstring for My_log
-    日志服务的基类
-    """
-
-    def __init__(self, log_file=None, level=logging.WARNING):
-        super(My_log, self).__init__()
-
-        self.logger = logging.getLogger()
-        if not self.logger.handlers:
-            log_dir = os.path.dirname(log_file)
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-
-            typea = self.logger.setLevel(level)
-            typea = logging.FileHandler(log_file)
-            formatter = logging.Formatter(
-                '[%(asctime)s]:%(filename)s:%(funcName)s:%(lineno)d :%(levelname)s: %(message)s'
-            )
-            typea.setFormatter(formatter)
-            self.logger.addHandler(typea)
-
-    def get_log(self):
-        return self.logger
 
 
 class Net_tcp_server(threading.Thread):
@@ -196,7 +172,7 @@ class Write_redis_queue(threading.Thread):
         self.queue = queue
 
     def run(self):
-        work_log = My_log().get_log()
+        # work_log = My_log().get_log()
         work_log.debug('Write_redis_queue thread start success')
         r = RedisQueue()
         work_log.debug('Write_redis_queue line redis success')
@@ -219,7 +195,7 @@ def conf_data(style, age=None):
     else:
         return data.get(style).get(age)
 
-def main():
+def work_start():
     work_log.info('------admin start')
 
     queue = Queue()
@@ -240,11 +216,36 @@ def main():
     listen_tcp.join()
     write_db.join()
 
+class work_daemon(daemon):
+    """docstring for work_daemon"""
+    def run(self):
+        work_start()
+
+def main():
+    if len(sys.argv) == 2:
+        daemon=work_daemon(pidfile)
+        if 'start' == sys.argv[1]:
+            work_log.info('------admin start daemon run ')
+            daemon.start()
+        elif 'stop' == sys.argv[1]:
+            work_log.info('------admin stop')
+            daemon.stop()
+        elif 'restart' == sys.argv[1]:
+            work_log.info('------admin restart')
+            daemon.restart()
+        else:
+            print('unkonow command')
+            sys.exit(2)
+        sys.exit(0)
+    elif len(sys.argv) == 1:
+        work_start()
+
 
 if __name__ == '__main__':
     work_dir = Path(__file__).resolve().parent
 
     logfile = work_dir / conf_data('bproxy', 'log')
     log_revel = conf_data('bproxy', 'log_revel')
+    pidfile = work_dir / conf_data('bproxy', 'pid')
     work_log = My_log(logfile, log_revel).get_log()
     main()

@@ -13,7 +13,7 @@ from pathlib import Path
 from lib.format_data import Format_data
 from lib.worklog import My_log
 from lib.bunnycDB import BunnycDB
-
+from lib.daemon import daemon
 
 class Work_task(object):
     """docstring for Work_task"""
@@ -171,15 +171,42 @@ def conf_data(style, age=None):
     else:
         return data.get(style).get(age)
 
-def main():
+
+def work_start():
     work_log.info('------admin start')
     work = Work_task()
     work.run()
+
+class work_daemon(daemon):
+    """docstring for work_daemon"""
+    def run(self):
+        work_start()
+
+
+def main():
+    if len(sys.argv) == 2:
+        daemon=work_daemon(pidfile)
+        if 'start' == sys.argv[1]:
+            work_log.info('------admin start daemon run ')
+            daemon.start()
+        elif 'stop' == sys.argv[1]:
+            work_log.info('------admin stop')
+            daemon.stop()
+        elif 'restart' == sys.argv[1]:
+            work_log.info('------admin restart')
+            daemon.restart()
+        else:
+            print('unkonow command')
+            sys.exit(2)
+        sys.exit(0)
+    elif len(sys.argv) == 1:
+        work_start()
 
 if __name__ == '__main__':
     work_dir = Path(__file__).resolve().parent
 
     logfile = work_dir / conf_data('mserver', 'log')
+    pidfile = work_dir / conf_data('mserver', 'pid')
     log_revel = conf_data('mserver', 'log_revel')
     work_log = My_log(logfile, log_revel).get_log()
     main()
