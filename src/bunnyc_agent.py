@@ -21,10 +21,12 @@ server_addr = ('10.2.1.5', 8716)
 tcp_protocol = False  # True | False
 debug = False  # True | False
 
-if platform.dist()[0] == 'fedora' and int(platform.dist()[1]) > 28:
-    ss_version = 'high'
-else:
-    ss_version = 'low'
+
+def if_system_version():
+    if platform.dist()[0] == 'fedora' and int(platform.dist()[1]) > 28:
+        return 'high'
+    else:
+        return 'low'
 
 
 class Base_str_task(object):
@@ -145,7 +147,7 @@ class Network_linux_info(Base_str_task):
     def get_network_ss_status(self):
         # 通过 ss 命令采集 socket 的状态
         data = commands.getstatusoutput('/usr/sbin/ss -s')[1].split('\n')
-        if ss_version == 'low':
+        if if_system_version() == 'low':
             new_data = {
                 'total': int(re.findall(r'\d+', data[0])[0]),
                 'kernel': int(re.findall(r'\d+', data[0])[1]),
@@ -188,7 +190,7 @@ class Network_linux_info(Base_str_task):
                     'ipv6': int(re.findall(r'\d+', data[9])[2])
                 }
             }
-        elif ss_version == 'high':
+        elif if_system_version() == 'high':
             new_data = {
                 'total': int(re.findall(r'\d+', data[0])[0]),
                 'tcp': {
