@@ -58,11 +58,88 @@ class Net_tcp_server(threading.Thread):
         super(Net_tcp_server, self).__init__()
         self.queue = queue
 
+    # def run(self):
+    #     """docstring for Net_tcp_server
+    #     监听TCP接口的线程，不符合接收规则就丢弃；
+    #     符合则添加上IP和时间字段，再传入待处理队列中
+    #     存在的问题：还没有对 TCP长报文 做应对,后续将进行解决
+    #     """
+    #     listen_port = conf_data('bproxy', 'port')
+
+    #     work_log.info('listen tcp thread start')
+
+    #     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    #     try:
+    #         server.bind(('', listen_port))
+    #         server.listen(5)
+    #         work_log.info('bind tcp listen_port success')
+    #     except Exception as e:
+    #         work_log.error('listen tcp port error')
+    #         work_log.error(str(e))
+
+    #     while True:
+    #         connection, client_addr = server.accept()
+    #         client_ip = client_addr[0]
+    #         data = connection.recv(4096)
+    #         connection.close()
+    #         work_log.debug('input tcp data from ip: ' + client_ip)
+    #         try:
+    #             try:
+    #                 info = json.loads(data.decode('utf-8'))
+    #             except Exception as e:
+    #                 continue
+
+    #             if info.get('mess_type') == 101:
+    #                 info['ip'] = client_ip
+    #                 info['gtime'] = time.strftime('%Y-%m-%d %H:%M:%S')
+    #                 self.queue.put(info)
+    #                 work_log.debug('send tcp data to queue success: ' +
+    #                                client_ip)
+    #             elif info.get('mess_type') == 102:
+    #                 self.queue.put(info)
+    #                 work_log.debug('mess_type 102 to queue')
+    #             else:
+    #                 work_log.error(client_ip + ',' + 'mess_type error')
+    #         except ValueError as e:
+    #             work_log.info(client_ip + ': ' + str(e))
+    #             work_log.info('not data')
+    #         except Exception as e:
+    #             work_log.error(client_ip + ': ' + str(e))
+    #     server.close()
+
+    def data_format(self, data, client_ip):
+        try:
+            try:
+                info = json.loads(data.decode('utf-8'))
+            except Exception as e:
+                work_log.debug('data_format json error')
+                work_log.debug(str(e))
+                return
+
+            if info.get('mess_type') == 101:
+                info['ip'] = client_ip
+                info['gtime'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                self.queue.put(info)
+                work_log.debug('mess_type 101 to queue')
+            elif info.get('mess_type') == 102:
+                self.queue.put(info)
+                work_log.debug('mess_type 102 to queue')
+            else:
+                work_log.error(client_ip + ',' + 'mess_type error')
+        except ValueError as e:
+            work_log.info(client_ip + ': ' + str(e))
+            work_log.info('not data')
+        except Exception as e:
+            work_log.error(client_ip + ': ' + str(e))
+
+
     def run(self):
         """docstring for Net_tcp_server
         监听TCP接口的线程，不符合接收规则就丢弃；
         符合则添加上IP和时间字段，再传入待处理队列中
         存在的问题：还没有对 TCP长报文 做应对,后续将进行解决
+        epoll model
         """
         listen_port = conf_data('bproxy', 'port')
 
@@ -72,41 +149,80 @@ class Net_tcp_server(threading.Thread):
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             server.bind(('', listen_port))
-            server.listen(5)
+            server.listen(512)
             work_log.info('bind tcp listen_port success')
         except Exception as e:
             work_log.error('listen tcp port error')
             work_log.error(str(e))
 
-        while True:
-            connection, client_addr = server.accept()
-            client_ip = client_addr[0]
-            data = connection.recv(4096)
-            connection.close()
-            work_log.debug('input tcp data from ip: ' + client_ip)
-            try:
-                try:
-                    info = json.loads(data.decode('utf-8'))
-                except Exception as e:
-                    continue
+        epoll = select.epoll()
+        epoll.register(serversocket.fileno(), select.EPOLLIN)
 
-                if info.get('mess_type') == 101:
-                    info['ip'] = client_ip
-                    info['gtime'] = time.strftime('%Y-%m-%d %H:%M:%S')
-                    self.queue.put(info)
-                    work_log.debug('send tcp data to queue success: ' +
-                                   client_ip)
-                elif info.get('mess_type') == 102:
-                    self.queue.put(info)
-                    work_log.debug('mess_type 102 to queue')
-                else:
-                    work_log.error(client_ip + ',' + 'mess_type error')
-            except ValueError as e:
-                work_log.info(client_ip + ': ' + str(e))
-                work_log.info('not data')
-            except Exception as e:
-                work_log.error(client_ip + ': ' + str(e))
-        server.close()
+        # 文件句柄到所对应对象的字典，格式为{句柄：对象}
+        fd_to_socket = {serversocket.fileno(): serversocket, }
+
+        timeout = 120
+
+        while True:
+            events = epoll.poll(timeout)
+
+            if not events:
+                work_log.info(f'tcp server epoll listen {timeout} s no data')
+                continue
+
+            for fd, event in events:
+                s = fd_to_socket[fd]
+
+                if s == serversocket:
+                    work_log.debug(f'----{id(s)} connect')
+                    # connection新套接字对象
+
+                    connection, address = s.accept()
+
+                    # 新连接socket设置为非阻塞
+                    connection.setblocking(False)
+
+                    # 注册新连接fd到待读事件集合
+                    epoll.register(connection.fileno(), select.EPOLLIN)
+
+                    # 把新连接的文件句柄以及对象保存到字典
+                    fd_to_socket[connection.fileno()] = connection
+
+                # 关闭事件
+                elif event & select.EPOLLHUP:
+                    work_log.debug(f'----{id(s)} close event')
+
+                    # 在epoll中注销客户端的文件句柄
+                    epoll.unregister(fd)
+
+                    # 关闭客户端的文件句柄
+                    fd_to_socket[fd].close()
+
+                    # 在字典中删除与已关闭客户端相关的信息
+                    del fd_to_socket[fd]
+
+                # 可读事件
+                elif event & select.EPOLLIN:
+                    data = s.recv(4096)
+                    if data:
+                        ip = s.getpeername()[0]
+                        self.data_format(data, ip)
+
+                        work_log.debug(f'----{id(s)} read data')
+                    else:
+                        work_log.debug(f'----{id(s)} close no data')
+
+                        epoll.modify(fd, select.EPOLLHUP)
+                        # 客户端关闭连接
+
+        # 在epoll中注销服务端文件句柄
+        epoll.unregister(serversocket.fileno())
+
+        # 关闭epoll
+        epoll.close()
+
+        # 关闭服务器socket
+        serversocket.close()
 
 
 class Net_udp_server(threading.Thread):
