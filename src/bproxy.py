@@ -58,82 +58,6 @@ class Net_tcp_server(threading.Thread):
         super(Net_tcp_server, self).__init__()
         self.queue = queue
 
-    # def run(self):
-    #     """docstring for Net_tcp_server
-    #     监听TCP接口的线程，不符合接收规则就丢弃；
-    #     符合则添加上IP和时间字段，再传入待处理队列中
-    #     存在的问题：还没有对 TCP长报文 做应对,后续将进行解决
-    #     """
-    #     listen_port = conf_data('bproxy', 'port')
-
-    #     work_log.info('listen tcp thread start')
-
-    #     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    #     try:
-    #         server.bind(('', listen_port))
-    #         server.listen(5)
-    #         work_log.info('bind tcp listen_port success')
-    #     except Exception as e:
-    #         work_log.error('listen tcp port error')
-    #         work_log.error(str(e))
-
-    #     while True:
-    #         connection, client_addr = server.accept()
-    #         client_ip = client_addr[0]
-    #         data = connection.recv(4096)
-    #         connection.close()
-    #         work_log.debug('input tcp data from ip: ' + client_ip)
-    #         try:
-    #             try:
-    #                 info = json.loads(data.decode('utf-8'))
-    #             except Exception as e:
-    #                 continue
-
-    #             if info.get('mess_type') == 101:
-    #                 info['ip'] = client_ip
-    #                 info['gtime'] = time.strftime('%Y-%m-%d %H:%M:%S')
-    #                 self.queue.put(info)
-    #                 work_log.debug('send tcp data to queue success: ' +
-    #                                client_ip)
-    #             elif info.get('mess_type') == 102:
-    #                 self.queue.put(info)
-    #                 work_log.debug('mess_type 102 to queue')
-    #             else:
-    #                 work_log.error(client_ip + ',' + 'mess_type error')
-    #         except ValueError as e:
-    #             work_log.info(client_ip + ': ' + str(e))
-    #             work_log.info('not data')
-    #         except Exception as e:
-    #             work_log.error(client_ip + ': ' + str(e))
-    #     server.close()
-
-    def data_format(self, data, client_ip):
-        try:
-            try:
-                info = json.loads(data.decode('utf-8'))
-            except Exception as e:
-                work_log.debug('data_format json error')
-                work_log.debug(str(e))
-                return
-
-            if info.get('mess_type') == 101:
-                info['ip'] = client_ip
-                info['gtime'] = time.strftime('%Y-%m-%d %H:%M:%S')
-                self.queue.put(info)
-                work_log.debug('mess_type 101 to queue')
-            elif info.get('mess_type') == 102:
-                self.queue.put(info)
-                work_log.debug('mess_type 102 to queue')
-            else:
-                work_log.error(client_ip + ',' + 'mess_type error')
-        except ValueError as e:
-            work_log.info(client_ip + ': ' + str(e))
-            work_log.info('not data')
-        except Exception as e:
-            work_log.error(client_ip + ': ' + str(e))
-
-
     def run(self):
         """docstring for Net_tcp_server
         监听TCP接口的线程，不符合接收规则就丢弃；
@@ -205,8 +129,9 @@ class Net_tcp_server(threading.Thread):
                 elif event & select.EPOLLIN:
                     data = s.recv(4096)
                     if data:
-                        ip = s.getpeername()[0]
-                        self.data_format(data, ip)
+                        client_ip = s.getpeername()[0]
+                        work_log.debug(f'tcp recv data <- {client_ip}')
+                        self.queue.put((data, client_ip))
 
                         work_log.debug(f'----{id(s)} read data')
                     else:
@@ -249,32 +174,10 @@ class Net_udp_server(threading.Thread):
             work_log.error(str(e))
 
         while True:
-            data, addr = s.recvfrom(102400)
-            work_log.debug('input udp data from ip: ' + addr[0])
-            try:
-                try:
-                    info = json.loads(data.decode('utf-8'))
-                except Exception:
-                    continue
-
-                if info.get('mess_type') == 101:
-                    info['ip'] = addr[0]
-                    info['gtime'] = time.strftime('%Y-%m-%d %H:%M:%S')
-                    self.queue.put(info)
-                    work_log.debug('send udp date to queue success: ' +
-                                   addr[0])
-                    work_log.debug('Net_udp_server mess_code: ' +
-                                   str(info.get('mess_code')))
-                elif info.get('mess_type') == 102:
-                    self.queue.put(info)
-                    work_log.debug('mess_type 102 to queue')
-                else:
-                    work_log.debug(str(info))
-                    work_log.error(addr[0] + ',' + 'mess_type error')
-            except ValueError as e:
-                work_log.error(addr[0] + ': ' + str(e))
-            except Exception as e:
-                work_log.error(addr[0] + ': ' + str(e))
+            data, addr = s.recvfrom(10240)
+            client_ip = addr[0]
+            work_log.debug(f'input udp data from ip: {client_ip}')
+            self.queue.put((data, client_ip))
         s.close()
 
 
@@ -287,6 +190,31 @@ class Write_redis_queue(threading.Thread):
         super(Write_redis_queue, self).__init__()
         self.queue = queue
 
+    def data_format(self, data, client_ip=None):
+        try:
+            try:
+                info = json.loads(data.decode('utf-8'))
+            except Exception as e:
+                work_log.debug('data_format json error')
+                work_log.debug(str(e))
+                return
+
+            if info.get('mess_type') == 101:
+                info['ip'] = client_ip
+                info['gtime'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                return json.dumps(info)
+                work_log.debug('mess_type 101 to queue')
+            elif info.get('mess_type') == 102:
+                return json.dumps(info)
+                work_log.debug('mess_type 102 to queue')
+            else:
+                work_log.error(f'ip: {client_ip}, recv data mess_type error')
+
+        except ValueError as e:
+            work_log.error(f'ip: {client_ip}, ValueError: {str(e)}')
+        except Exception as e:
+            work_log.error(f'ip: {client_ip}, Exception: {str(e)}')
+
     def run(self):
         # work_log = My_log().get_log()
         work_log.debug('Write_redis_queue thread start success')
@@ -296,7 +224,7 @@ class Write_redis_queue(threading.Thread):
         while 1:
             data = self.queue.get()
             try:
-                r.put(json.dumps(data))
+                r.put(self.data_format(data[0], data[1]))
                 work_log.debug('write redis queue success')
             except Exception as e:
                 work_log.error('write redis queue error')
