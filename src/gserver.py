@@ -20,7 +20,7 @@ import redis
 from pymemcache.client import Client
 from lib.worklog import My_log
 from lib.daemon import daemon
-
+from lib.myconf import conf_data
 
 class my_memcached(object):
     """docstring for my_memcached
@@ -144,13 +144,6 @@ class SendBserver(threading.Thread):
             new_data = json.dumps(data).encode('utf-8')
             self.send_udp_mess(new_data)
 
-def conf_data(style, age=None):
-    conf_file = work_dir / 'conf.yaml'
-    data = yaml.load(conf_file.read_text(), Loader=yaml.FullLoader)
-    if not age:
-        return data.get(style)
-    else:
-        return data.get(style).get(age)
 
 def work_start():
     minute_1 = minute_5 = minute_10 = minute_30 = minute_60 = 0

@@ -16,7 +16,7 @@ from pathlib import Path
 from multiprocessing.dummy import Pool as ThreadPool
 from lib.worklog import My_log
 from lib.daemon import daemon
-
+from lib.myconf import conf_data
 
 class check_web_service(object):
     """docstring for check_web_service"""
@@ -163,14 +163,6 @@ def send_mess_udp(data):
     except Exception as e:
         work_log.error('send data to udp socket error')
         work_log.error(str(e))
-
-def conf_data(style, age=None):
-    conf_file = work_dir / 'conf.yaml'
-    data = yaml.load(conf_file.read_text(), Loader=yaml.FullLoader)
-    if not age:
-        return data.get(style)
-    else:
-        return data.get(style).get(age)
 
 
 def work_start():

@@ -19,10 +19,11 @@ import socket
 import json
 from pathlib import Path
 from queue import Queue
-import yaml
 import redis
+import selectors
 from lib.worklog import My_log
 from lib.daemon import daemon
+from lib.myconf import conf_data
 
 class RedisQueue(object):
     """docstring for RedisQueue"""
@@ -52,142 +53,80 @@ class RedisQueue(object):
     def size(self):
         return self.r.llen(self.queue)
 
+class SelectorsTcpServer(object):
+    '''监听TCP端口, 采用selectors 的IO复用实现，
+        存在的问题：还没有对 TCP长报文 做应对,后续将进行解决'''
 
-class Net_tcp_server(threading.Thread):
-    def __init__(self, queue):
-        super(Net_tcp_server, self).__init__()
+    def __init__(self, address, queue):
         self.queue = queue
+        self.address = address
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # 地址复用
+        self.server.setblocking(False)
+        # 非阻塞
+        self.sel = selectors.DefaultSelector()
 
-    def run(self):
-        """docstring for Net_tcp_server
-        监听TCP接口的线程，不符合接收规则就丢弃；
-        符合则添加上IP和时间字段，再传入待处理队列中
-        存在的问题：还没有对 TCP长报文 做应对,后续将进行解决
-        epoll model
-        """
-        listen_port = conf_data('bproxy', 'port')
+    def server_start(self):
+        self.server.bind(self.address)
+        self.server.listen(512)
+        work_log.info(f'listen: {self.address}')
+        self.sel.register(self.server, selectors.EVENT_READ, self.accept)
 
-        work_log.info('listen tcp thread start')
+    def accept(self, server):
+        conn, addr = server.accept()
+        conn.setblocking(False)
+        self.sel.register(conn, selectors.EVENT_READ, self.read)
 
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            server.bind(('', listen_port))
-            server.listen(512)
-            work_log.info('bind tcp listen_port success')
-        except Exception as e:
-            work_log.error('listen tcp port error')
-            work_log.error(str(e))
+    def read(self, conn):
+        data = conn.recv(2048)
+        if data:
+            client_ip = conn.getpeername()[0]
+            work_log.debug(str(data))
+            self.queue.put((data,client_ip))
+            self.sel.unregister(conn)
+            conn.close()
+        else:
+            self.sel.unregister(conn)
+            conn.close()
 
-        epoll = select.epoll()
-        epoll.register(serversocket.fileno(), select.EPOLLIN)
-
-        # 文件句柄到所对应对象的字典，格式为{句柄：对象}
-        fd_to_socket = {serversocket.fileno(): serversocket, }
-
-        timeout = 120
-
+    def monitor(self):
+        work_log.info('SelectorsTcpServer - tcp select')
         while True:
-            events = epoll.poll(timeout)
+            events_list = self.sel.select()
+            for key, mask in events_list:
+                callback = key.data
+                callback(key.fileobj)
 
-            if not events:
-                work_log.info(f'tcp server epoll listen {timeout} s no data')
-                continue
+class SelectorsUcpServer(object):
 
-            for fd, event in events:
-                s = fd_to_socket[fd]
-
-                if s == serversocket:
-                    work_log.debug(f'----{id(s)} connect')
-                    # connection新套接字对象
-
-                    connection, address = s.accept()
-
-                    # 新连接socket设置为非阻塞
-                    connection.setblocking(False)
-
-                    # 注册新连接fd到待读事件集合
-                    epoll.register(connection.fileno(), select.EPOLLIN)
-
-                    # 把新连接的文件句柄以及对象保存到字典
-                    fd_to_socket[connection.fileno()] = connection
-
-                # 关闭事件
-                elif event & select.EPOLLHUP:
-                    work_log.debug(f'----{id(s)} close event')
-
-                    # 在epoll中注销客户端的文件句柄
-                    epoll.unregister(fd)
-
-                    # 关闭客户端的文件句柄
-                    fd_to_socket[fd].close()
-
-                    # 在字典中删除与已关闭客户端相关的信息
-                    del fd_to_socket[fd]
-
-                # 可读事件
-                elif event & select.EPOLLIN:
-                    data = s.recv(4096)
-                    if data:
-                        client_ip = s.getpeername()[0]
-                        work_log.debug(f'tcp recv data <- {client_ip}')
-                        self.queue.put((data, client_ip))
-
-                        work_log.debug(f'----{id(s)} read data')
-                    else:
-                        work_log.debug(f'----{id(s)} close no data')
-
-                        epoll.modify(fd, select.EPOLLHUP)
-                        # 客户端关闭连接
-
-        # 在epoll中注销服务端文件句柄
-        epoll.unregister(serversocket.fileno())
-
-        # 关闭epoll
-        epoll.close()
-
-        # 关闭服务器socket
-        serversocket.close()
-
-
-class Net_udp_server(threading.Thread):
-    def __init__(self, queue):
-        super(Net_udp_server, self).__init__()
+    def __init__(self, address, queue):
         self.queue = queue
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.server.setblocking(False)
+        self.server.bind(address)
+        self.sel = selectors.DefaultSelector()
+        self.sel.register(self.server, selectors.EVENT_READ, self.read)
 
-    def run(self):
-        """docstring for Net_udp_server
-        监听UDP接口的线程，不符合接收规则就丢弃；
-        符合则添加上IP和时间字段，再传入待处理队列中
-        存在的问题：没有对 udp长报文 做应对，这个有点麻烦，决定短消息用UDP，长消息用TCP
-        """
+    def read(self, server):
+        data, addr = server.recvfrom(4096)
+        client_ip = addr[0]
+        self.queue.put((data,client_ip))
 
-        listen_port = conf_data('bproxy', 'port')
-
-        work_log.info('listen udp thread start')
-        try:
-            address = ('', listen_port)
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.bind(address)
-        except Exception as e:
-            work_log.error('listen udp port error')
-            work_log.error(str(e))
-
+    def monitor(self):
+        work_log.info('SelectorsUcpServer - tcp select')
         while True:
-            data, addr = s.recvfrom(10240)
-            client_ip = addr[0]
-            work_log.debug(f'input udp data from ip: {client_ip}')
-            self.queue.put((data, client_ip))
-        s.close()
+            events_list = self.sel.select()
+            for key, mask in events_list:
+                callback = key.data
+                callback(key.fileobj)
 
-
-class Write_redis_queue(threading.Thread):
+class DataToRedis(object):
     """docstring for Write_redis_queue
     用于从队列中取出数据，直接存入 redis 队列
     """
-
     def __init__(self, queue):
-        super(Write_redis_queue, self).__init__()
+        super(DataToRedis, self).__init__()
         self.queue = queue
 
     def data_format(self, data, client_ip=None):
@@ -216,13 +155,13 @@ class Write_redis_queue(threading.Thread):
             work_log.error(f'ip: {client_ip}, Exception: {str(e)}')
 
     def run(self):
-        # work_log = My_log().get_log()
         work_log.debug('Write_redis_queue thread start success')
         r = RedisQueue()
         work_log.debug('Write_redis_queue line redis success')
 
         while 1:
             data = self.queue.get()
+            work_log.debug(str(data))
             try:
                 r.put(self.data_format(data[0], data[1]))
                 work_log.debug('write redis queue success')
@@ -230,29 +169,71 @@ class Write_redis_queue(threading.Thread):
                 work_log.error('write redis queue error')
                 work_log.error(str(e))
 
+class NetTcpThread(threading.Thread):
+    def __init__(self, queue):
+        super(NetTcpThread, self).__init__()
+        self.queue = queue
 
-def conf_data(style, age=None):
-    conf_file = work_dir / 'conf.yaml'
-    data = yaml.load(conf_file.read_text(), Loader=yaml.FullLoader)
-    if not age:
-        return data.get(style)
-    else:
-        return data.get(style).get(age)
+    def run(self):
+        """docstring for NetTcpThread"""
+        listen_port = conf_data('bproxy', 'port')
+        work_log.info('listen tcp thread start')
+
+        try:
+            task = SelectorsTcpServer(('0.0.0.0',8716), self.queue)
+            task.server_start()
+            task.monitor()
+        except Exception as e:
+            work_log.error('tcp thread error')
+            work_log.error(str(e))
+
+class NetUdpThread(threading.Thread):
+    def __init__(self, queue):
+        super(NetUdpThread, self).__init__()
+        self.queue = queue
+
+    def run(self):
+        """docstring for NetUdpThread"""
+
+        listen_port = conf_data('bproxy', 'port')
+        address = ('', listen_port)
+        work_log.info('listen udp thread start')
+        try:
+            task = SelectorsUcpServer(address, self.queue)
+            task.monitor()
+        except Exception as e:
+            work_log.error('udp thread error')
+            work_log.error(str(e))
+
+class WriteRedisThread(threading.Thread):
+
+    def __init__(self, queue):
+        super(WriteRedisThread, self).__init__()
+        self.queue = queue
+
+    def run(self):
+        try:
+            work_log.debug('WriteRedisThread start')
+            task = DataToRedis(self.queue)
+            task.run()
+        except Exception as e:
+            work_log.error('WriteRedisThread error')
+            work_log.error(str(e))
 
 def work_start():
     work_log.info('------admin start')
 
     queue = Queue()
 
-    listen_ucp = Net_udp_server(queue)
+    listen_ucp = NetUdpThread(queue)
     listen_ucp.start()
     work_log.info('start udp server')
 
-    listen_tcp = Net_tcp_server(queue)
+    listen_tcp = NetTcpThread(queue)
     listen_tcp.start()
     work_log.info('start tcp server')
 
-    write_db = Write_redis_queue(queue)
+    write_db = WriteRedisThread(queue)
     write_db.start()
     work_log.info('start wredis server')
 
@@ -289,7 +270,7 @@ if __name__ == '__main__':
     work_dir = Path(__file__).resolve().parent
 
     logfile = work_dir / conf_data('bproxy', 'log')
-    log_revel = conf_data('bproxy', 'log_revel')
     pidfile = work_dir / conf_data('bproxy', 'pid')
+    log_revel = conf_data('bproxy', 'log_revel')
     work_log = My_log(logfile, log_revel).get_log()
     main()
