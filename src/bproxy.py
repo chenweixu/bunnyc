@@ -115,7 +115,7 @@ class SelectorsTcpServer(object):
 
 class SelectorsUdpServer(object):
     """监听UDP端口, 采用selectors 的IO复用实现
-    注意，数据包不能超过4096字节"""
+    注意，数据包不能超过限制字节:102400"""
 
     def __init__(self, address, queue):
         self.queue = queue
@@ -126,7 +126,8 @@ class SelectorsUdpServer(object):
         self.sel.register(self.server, selectors.EVENT_READ, self.read)
 
     def read(self, server):
-        data, addr = server.recvfrom(4096)
+        data, addr = server.recvfrom(102400)
+        work_log.debug(len(data))
         client_ip = addr[0]
         self.queue.put((data, client_ip))
 
@@ -156,8 +157,8 @@ class DataToRedis(object):
             try:
                 info = json.loads(data.decode("utf-8"))
             except Exception as e:
-                work_log.debug("data_format json error")
-                work_log.debug(str(e))
+                work_log.error("data_format json error")
+                work_log.error(str(e))
                 return
 
             if info.get("mess_type") == 101:
