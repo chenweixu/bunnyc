@@ -1,5 +1,6 @@
 
 import yaml
+from pathlib import Path
 
 def conf_data(style, age=None):
     work_dir = Path(__file__).resolve().parent.parent

@@ -1,13 +1,12 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Email: chenwx716@163.com
 # DateTime: 2018-07-22 14:18:53
-__author__ = 'chenwx'
-'''主要用于采集一些设备的信息
-'''
+__author__ = "chenwx"
+"""主要用于采集一些设备的信息
+"""
 
 import sys
-import os
 import time
 import json
 import socket
@@ -15,12 +14,11 @@ import threading
 from pathlib import Path
 from ipaddress import ip_address
 from queue import Queue
-import yaml
-import redis
 from pymemcache.client import Client
 from lib.worklog import My_log
 from lib.daemon import daemon
 from lib.myconf import conf_data
+
 
 class my_memcached(object):
     """docstring for my_memcached
@@ -30,7 +28,7 @@ class my_memcached(object):
     def __init__(self, ip, port):
         super(my_memcached, self).__init__()
         # link = [str(ip) + ":" + str(port)]
-        self.mc = Client((ip, int(port)),connect_timeout=2)
+        self.mc = Client((ip, int(port)), connect_timeout=2)
         self.ip = ip
         self.port = port
 
@@ -51,10 +49,10 @@ class my_memcached(object):
 
     def get_run_date(self, strid):
         mem_data = self.stats()
-        cmd_get = mem_data.get('cmd_get'.encode())
-        get_hits = mem_data.get('get_hits'.encode())
-        memsum = mem_data.get('limit_maxbytes'.encode())
-        memused = mem_data.get('bytes'.encode())
+        cmd_get = mem_data.get("cmd_get".encode())
+        get_hits = mem_data.get("get_hits".encode())
+        memsum = mem_data.get("limit_maxbytes".encode())
+        memused = mem_data.get("bytes".encode())
 
         if cmd_get > 0:
             get_hits_rate = round(get_hits / cmd_get * 100, 2)
@@ -62,25 +60,26 @@ class my_memcached(object):
             get_hits_rate = 100
 
         run_data = {
-            'mess_code': 1101,
-            'mess_type': 102,
-            'type': 'memcache',
-            'strid': strid,
-            'ip': self.ip,
-            'intip': int(ip_address(self.ip)),
-            'port': self.port,
-            'memsum': memsum,
-            'memused': memused,
-            'cmd_get': cmd_get,
-            'cmd_set': mem_data.get('cmd_set'.encode()),
-            'get_hits': get_hits,
-            'curr_connections': mem_data.get('curr_connections'.encode()),
-            'total_connections': mem_data.get('total_connections'.encode()),
-            'ram_used_rate': round(memused / memsum * 100, 2),
-            'get_hits_rate': get_hits_rate,
-            'ctime': time.strftime('%Y-%m-%d %H:%M:%S')
+            "mess_code": 1101,
+            "mess_type": 102,
+            "type": "memcache",
+            "strid": strid,
+            "ip": self.ip,
+            "intip": int(ip_address(self.ip)),
+            "port": self.port,
+            "memsum": memsum,
+            "memused": memused,
+            "cmd_get": cmd_get,
+            "cmd_set": mem_data.get("cmd_set".encode()),
+            "get_hits": get_hits,
+            "curr_connections": mem_data.get("curr_connections".encode()),
+            "total_connections": mem_data.get("total_connections".encode()),
+            "ram_used_rate": round(memused / memsum * 100, 2),
+            "get_hits_rate": get_hits_rate,
+            "ctime": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
         return run_data
+
 
 class Get_memcache(threading.Thread):
     """获取 memcached 信息的线程
@@ -98,7 +97,7 @@ class Get_memcache(threading.Thread):
             work_log.debug("get memcache data work start : " + i)
             ip = memcache_service_id.get(i)[0]
             port = memcache_service_id.get(i)[1]
-            work_log.debug('mc_ip: %s, mc_port: %d' % (ip, port))
+            work_log.debug("mc_ip: %s, mc_port: %d" % (ip, port))
             try:
                 mem_data = my_memcached(ip, port)
                 data = mem_data.get_run_date(i)
@@ -110,8 +109,10 @@ class Get_memcache(threading.Thread):
         else:
             work_log.info("all memcache check end")
 
+
 class SendBserver(threading.Thread):
     """docstring for SendBserver"""
+
     def __init__(self, queue):
         super(SendBserver, self).__init__()
         self.queue = queue
@@ -120,28 +121,26 @@ class SendBserver(threading.Thread):
         # 通过 udp 发送数据
         # udp 是无状态的协议，没有发送失败这种情况，
         # server_addr = ('10.2.1.5', 8716)
-        server_addr = tuple(conf_data('gserver', 'mess_server'))
+        server_addr = tuple(conf_data("gserver", "mess_server"))
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.sendto(mess, server_addr)
             s.close()
         except socket.error:
-            work_log.error('send_udp_mess socket.error')
+            work_log.error("send_udp_mess socket.error")
         except Exception as e:
-            work_log.error('send_udp_mess other error')
+            work_log.error("send_udp_mess other error")
             work_log.error(str(e))
 
     def run(self):
         work_log = My_log().get_log()
-        work_log.info('SendBserver thread start success')
+        work_log.info("SendBserver thread start success")
 
         while 1:
             data = self.queue.get()
-            work_log.debug('from queue get data success')
+            work_log.debug("from queue get data success")
             work_log.debug(str(data))
-
-            mess_code = data.get('mess_code')
-            new_data = json.dumps(data).encode('utf-8')
+            new_data = json.dumps(data).encode("utf-8")
             self.send_udp_mess(new_data)
 
 
@@ -175,35 +174,39 @@ def work_start():
 
     mss_server.join()
 
+
 class work_daemon(daemon):
     """docstring for work_daemon"""
+
     def run(self):
         work_start()
 
+
 def main():
     if len(sys.argv) == 2:
-        daemon=work_daemon(pidfile)
-        if 'start' == sys.argv[1]:
-            work_log.info('------admin start daemon run ')
+        daemon = work_daemon(pidfile)
+        if "start" == sys.argv[1]:
+            work_log.info("------admin start daemon run ")
             daemon.start()
-        elif 'stop' == sys.argv[1]:
-            work_log.info('------admin stop')
+        elif "stop" == sys.argv[1]:
+            work_log.info("------admin stop")
             daemon.stop()
-        elif 'restart' == sys.argv[1]:
-            work_log.info('------admin restart')
+        elif "restart" == sys.argv[1]:
+            work_log.info("------admin restart")
             daemon.restart()
         else:
-            print('unkonow command')
+            print("unkonow command")
             sys.exit(2)
         sys.exit(0)
     elif len(sys.argv) == 1:
-        work_log.info('------admin start')
+        work_log.info("------admin start")
         work_start()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     work_dir = Path(__file__).resolve().parent
-    logfile = work_dir / conf_data('gserver', 'log')
-    pidfile = work_dir / conf_data('gserver', 'pid')
-    log_revel = conf_data('gserver', 'log_revel')
+    logfile = work_dir / conf_data("gserver", "log")
+    pidfile = work_dir / conf_data("gserver", "pid")
+    log_revel = conf_data("gserver", "log_revel")
     work_log = My_log(logfile, log_revel).get_log()
     main()

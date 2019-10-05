@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Email: chenwx716@163.com
 # DateTime: 2019-02-28 23:31:29

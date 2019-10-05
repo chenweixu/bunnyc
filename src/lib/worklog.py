@@ -18,7 +18,7 @@ class My_log(object):
             typea = self.logger.setLevel(level)
             typea = logging.FileHandler(log_file)
             formatter = logging.Formatter(
-                '[%(asctime)s]:%(filename)s:%(funcName)s:%(lineno)d :%(levelname)s: %(message)s'
+                '[%(asctime)s]:%(levelname)s:%(filename)s:%(funcName)s:%(lineno)d : %(message)s'
             )
             typea.setFormatter(formatter)
             self.logger.addHandler(typea)

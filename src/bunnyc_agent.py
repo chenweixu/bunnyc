@@ -18,7 +18,8 @@ from signal import SIGTERM
 
 server_addr = ('10.2.1.5', 8716)
 
-tcp_protocol = False  # True | False
+tcp_protocol = True  # True | False
+# tcp_protocol = False  # True | False
 debug = False  # True | False
 
 
